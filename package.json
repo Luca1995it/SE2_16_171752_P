@@ -1,0 +1,37 @@
+{
+  "name": "se2_16_171752_p",
+  "version": "1.0.0",
+  "description": "Progetto finale di Ingegneria del Software di Luca Di Liello",
+  "main": "server.js",
+  "dependencies": {
+    "bind": "^0.1.7",
+    "cli": "^1.0.1",
+    "express": "^4.14.0",
+    "jasmine": "^2.5.2",
+    "pg": "^6.1.0",
+    "psql": "0.0.1",
+    "util": "^0.10.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Luca1995it/SE2_16_171752_P.git"
+  },
+  "keywords": [
+    "JS",
+    "Java",
+    "Javascript",
+    "Node",
+    "NPM"
+  ],
+  "author": "Luca Di Liello",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Luca1995it/SE2_16_171752_P/issues"
+  },
+  "homepage": "https://github.com/Luca1995it/SE2_16_171752_P#readme"
+}
