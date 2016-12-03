@@ -8,8 +8,9 @@ create table utenti(
 create table menu(
 	id serial primary key,
 	tipo varchar(50),
-	giorno varchar(20),
-	orario varchar(50)
+	giorno integer,
+	orario varchar(50),
+	id_pasti integer references pasti(id)
 );
 
 create table sceglie(
@@ -33,4 +34,10 @@ create table contiene(
 create table intollerante(
 	id_utente integer references utenti(id),
 	id_allergie integer references allergie(id)
+);
+
+create table pasti(
+	id serial primary key,
+	nome varchar(50),
+	descr varchar(1024)
 );
