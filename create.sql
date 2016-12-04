@@ -41,3 +41,11 @@ create table pasti(
 	nome varchar(50),
 	descr varchar(1024)
 );
+
+select count(*) as risultato from
+	(select contiene.id_allergie from 
+		(select res.id_menu from (select id_menu from sceglie where sceglie.id_utente = 14) as res, menu where res.id_menu = menu.id and giorno = 0 and orario = 'pranzo' and tipo = 'secondo') as foo,
+		contiene
+	 where foo.id_menu = contiene.id_menu) as pippo,
+	 intollerante
+where pippo.id_allergie = intollerante.id_allergie and id_utente = 14;
