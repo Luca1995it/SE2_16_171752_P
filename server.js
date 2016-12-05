@@ -66,6 +66,10 @@ app.use(session({
 	cookie: { maxAge: 60000 }
 }));
 
+app.use('/$',function(req,res){
+	res.redirect('/private/home');
+});
+
 //funzione filtro per non autenticati
 app.use('/private/*', function(req,res,next){
 	if(req.session.user != undefined) next();
@@ -150,10 +154,12 @@ app.get('/private/menuOggi', function(req,res){
 			values: [req.session.user.id,(new Date()).getDay(),'pranzo','primo']
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				text += '<div class=\"row\"><h3>Pranzo - Primi</h3></div>';
-				text += addRiga(result);
+				if(result.rows.length < 1){
+					text += '<div class=\"row\">Nessun pasto selezionato</div>'
+				} else text += addRiga(result);
 			}
 		});
 			
@@ -162,7 +168,7 @@ app.get('/private/menuOggi', function(req,res){
 			values: [req.session.user.id,(new Date()).getDay(),'pranzo','primo',req.session.user.id]
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				if(result.rows[0].risultato > 0){
 					text += '<div class=\"row\"><h4 style=\"color: red\">Contiene allergeni !</h4></div>';
@@ -172,13 +178,15 @@ app.get('/private/menuOggi', function(req,res){
 			
 		client.query({
 			text: 'select * from (select * from (select * from utenti natural join sceglie where utenti.id = $1 and sceglie.data = now()) as res, menu where res.id_menu = menu.id and giorno = $2) as x, pasti where x.id_pasti = pasti.id and orario = $3 and tipo = $4;',
-			values: [new Date(),req.session.user.id,(new Date()).getDay(),'pranzo','secondo']
+			values: [req.session.user.id,(new Date()).getDay(),'pranzo','secondo']
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				text += '<div class=\"row\"><h3>Pranzo - Secondi</h3></div>';
-				text += addRiga(result);
+				if(result.rows.length < 1){
+					text += '<div class=\"row\">Nessun pasto selezionato</div>'
+				} else text += addRiga(result);
 			}
 		});
 			
@@ -187,7 +195,7 @@ app.get('/private/menuOggi', function(req,res){
 			values: [req.session.user.id,(new Date()).getDay(),'pranzo','secondo',req.session.user.id]
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				if(result.rows[0].risultato > 0){
 					text += '<div class=\"row\"><h4 style=\"color: red\">Contiene allergeni !</h4></div>';
@@ -197,13 +205,15 @@ app.get('/private/menuOggi', function(req,res){
 			
 		client.query({
 			text: 'select * from (select * from (select * from utenti natural join sceglie where utenti.id = $1 and sceglie.data = now()) as res, menu where res.id_menu = menu.id and giorno = $2) as x, pasti where x.id_pasti = pasti.id and orario = $3 and tipo = $4;',
-			values: [new Date(),req.session.user.id,(new Date()).getDay(),'pranzo','contorno']
+			values: [req.session.user.id,(new Date()).getDay(),'pranzo','contorno']
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				text += '<div class=\"row\"><h3>Pranzo - Contorni</h3></div>';
-				text += addRiga(result);
+				if(result.rows.length < 1){
+					text += '<div class=\"row\">Nessun pasto selezionato</div>'
+				} else text += addRiga(result);
 			}
 		});
 			
@@ -212,7 +222,7 @@ app.get('/private/menuOggi', function(req,res){
 			values: [req.session.user.id,(new Date()).getDay(),'pranzo','contorno',req.session.user.id]
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				if(result.rows[0].risultato > 0){
 					text += '<div class=\"row\"><h4 style=\"color: red\">Contiene allergeni !</h4></div>';
@@ -222,13 +232,15 @@ app.get('/private/menuOggi', function(req,res){
 			
 		client.query({
 			text: 'select * from (select * from (select * from utenti natural join sceglie where utenti.id = $1 and sceglie.data = now()) as res, menu where res.id_menu = menu.id and giorno = $2) as x, pasti where x.id_pasti = pasti.id and orario = $3 and tipo = $4;',
-			values: [new Date(),req.session.user.id,(new Date()).getDay(),'cena','primo']
+			values: [req.session.user.id,(new Date()).getDay(),'cena','primo']
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				text += '<div class=\"row\"><h3>Cena - Primi</h3></div>';
-				text += addRiga(result);
+				if(result.rows.length < 1){
+					text += '<div class=\"row\">Nessun pasto selezionato</div>'
+				} else text += addRiga(result);
 			}
 		});
 			
@@ -237,7 +249,7 @@ app.get('/private/menuOggi', function(req,res){
 			values: [req.session.user.id,(new Date()).getDay(),'cena','primo',req.session.user.id]
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				if(result.rows[0].risultato > 0){
 					text += '<div class=\"row\"><h4 style=\"color: red\">Contiene allergeni !</h4></div>';
@@ -247,13 +259,15 @@ app.get('/private/menuOggi', function(req,res){
 			
 		client.query({
 			text: 'select * from (select * from (select * from utenti natural join sceglie where utenti.id = $1 and sceglie.data = now()) as res, menu where res.id_menu = menu.id and giorno = $2) as x, pasti where x.id_pasti = pasti.id and orario = $3 and tipo = $4;',
-			values: [new Date(),req.session.user.id,(new Date()).getDay(),'cena','secondo']
+			values: [req.session.user.id,(new Date()).getDay(),'cena','secondo']
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				text += '<div class=\"row\"><h3>Cena - Secondi</h3></div>';
-				text += addRiga(result);
+				if(result.rows.length < 1){
+					text += '<div class=\"row\">Nessun pasto selezionato</div>'
+				} else text += addRiga(result);
 			}
 		});
 			
@@ -262,7 +276,7 @@ app.get('/private/menuOggi', function(req,res){
 			values: [req.session.user.id,(new Date()).getDay(),'cena','secondo',req.session.user.id]
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				if(result.rows[0].risultato > 0){
 					text += '<div class=\"row\"><h4 style=\"color: red\">Contiene allergeni !</h4></div>';
@@ -272,13 +286,15 @@ app.get('/private/menuOggi', function(req,res){
 			
 		client.query({
 			text: 'select * from (select * from (select * from utenti natural join sceglie where utenti.id = $1 and sceglie.data = now()) as res, menu where res.id_menu = menu.id and giorno = $2) as x, pasti where x.id_pasti = pasti.id and orario = $3 and tipo = $4;',
-			values: [new Date(),req.session.user.id,(new Date()).getDay(),'cena','contorno']
+			values: [req.session.user.id,(new Date()).getDay(),'cena','contorno']
 		}, function(err, result) {
 			done();
-			if (err) res.end('/error');
+			if (err) res.redirect('/error');
 		  	else {
 				text += '<div class=\"row\"><h3>Cena - Contorni</h3></div>';
-				text += addRiga(result);
+				if(result.rows.length < 1){
+					text += '<div class=\"row\">Nessun pasto selezionato</div>'
+				} else text += addRiga(result);
 			}
 		});
 
@@ -287,9 +303,7 @@ app.get('/private/menuOggi', function(req,res){
 			values: [req.session.user.id,(new Date()).getDay(),'cena','contorno',req.session.user.id]
 		}, function(err, result) {
 			done();
-			if (err){
-				res.end('/error');
-			}
+			if (err) res.redirect('/error');
 		  	else {
 				if(result.rows[0].risultato > 0){
 					text += '<div class=\"row\"><h4 style=\"color: red\">Contiene allergeni !</h4></div>';
@@ -306,19 +320,71 @@ app.get('/private/menuOggi', function(req,res){
   	});
 });
 
-
-app.use('/private/choose', function(req,res){
+app.get('/private/choose', function(req,res){
 	pg.connect(
 		connectionString, 
 		function(err, client, done) {
 
 			client.query({
-				text: 'insert into intollerante (id_utente,id_allergie) values ($1,$2)'
+				text: 'select data from sceglie where data BETWEEN NOW() AND now() + INTERVAL \'7 DAY\' and id_utente = $1 group by data;',
+				values: [req.session.user.id]
 			}, function(err, result) {
 				done();
 				if (err) res.redirect('/error');
 		  		else {
-					res.redirect('/private/allergie');
+					var date = [];
+					for(i = 0; i < result.rows.length; i++){
+						date.push(result.rows[i].data);
+					}
+					
+				}
+			});
+	});
+});
+
+app.get('/private/vota',function(req,res){
+	pg.connect(
+		connectionString, 
+		function(err, client, done) {
+
+			client.query({
+				text: 'select * from sceglie,menu,pasti where sceglie.id_utente = $1 and sceglie.voto = 0 and sceglie.id_menu = menu.id and menu.id_pasti = pasti.id order by data;',
+				values: [req.session.user.id]
+			}, function(err, result) {
+				done();
+				if (err) res.redirect('/error');
+		  		else {
+					var text = '';
+					text += '<form action=\"/private/addVoti\" method=\"post\">';
+					for(i = 0; i < result.rows.length; i++){
+						var row = result.rows[i];
+						text += '<div class=\"row\">';
+						text += '<div class=\"col-md-3\">';
+						text += '<img src=\"' + row.fotopath + '\" alt=\"immagine non disponibile\">';
+						text += '</div>';
+						text += '<div class=\"col-md-3\">';
+						text += '<h4>' + row.nome +'</h4>';
+						text += '</div>';
+						text += '<div class=\"col-md-3\">';
+						text += '<h4>' + row.descr +'</h4>';
+						text += '</div>';
+						text += '<div class=\"col-md-3\">';
+						text += '<input type=\"radio\" name=\"' + 'voto' + i + '\" value=\"' + 0 + '\">' + 'No vote' + ' |';
+						text += '<input type=\"radio\" name=\"' + 'voto' + i + '\" value=\"' + 1 + '\">' + 1 + ' |';
+						text += '<input type=\"radio\" name=\"' + 'voto' + i + '\" value=\"' + 2 + '\">' + 2 + ' |';
+						text += '<input type=\"radio\" name=\"' + 'voto' + i + '\" value=\"' + 3 + '\">' + 3 + ' |';
+						text += '<input type=\"radio\" name=\"' + 'voto' + i + '\" value=\"' + 4 + '\">' + 4 + ' |';
+						text += '<input type=\"radio\" name=\"' + 'voto' + i + '\" value=\"' + 5 + '\">' + 5 + ' |';
+						text += '</div>';
+						text += '</div>';
+					}
+					text += '</form>';
+					
+					bind.toFile('private/vota.html',{
+						tabella: text
+					},function(data){
+						res.end(data);
+					})
 				}
 			});
 	});
