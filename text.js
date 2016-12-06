@@ -14,6 +14,9 @@ exports.closeForm = closeForm;
 exports.addInput = addInput;
 exports.formButton = formButton;
 exports.link = link;
+exports.addInputChecked = addInputChecked;
+exports.addInputHidden = addInputHidden;
+exports.addOption = addOption;
 
 function intestazione(testo,dim){
 	return '<div class=\"row\">' + setDim(testo,dim).toUpperCase() + '</div>';
@@ -77,4 +80,16 @@ function formButton(text){
 
 function link(src,text){
 	return '<a href=\"' + src + '\">' + text + '</a>';
+}
+
+function addInputChecked(type,name,value){
+	return '<input checked type=\"' + type + '\" name=\"' + name + '\" value=\"' + value + '\"/>';
+}
+
+function addInputHidden(type,name,value){
+	return '<input hidden type=\"' + type + '\" name=\"' + name + '\" value=\"' + value + '\"/>';
+}
+
+function addOption(value,text){
+	return '<option value=\"' + value + '\">' + text + '</option>';
 }

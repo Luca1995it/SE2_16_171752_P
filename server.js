@@ -110,13 +110,12 @@ app.get('/private/home',function(req,res){		//ok
 	bind.toFile('private/home.html',
 		{},
 		function(data){
-			res.send(data);
+			res.writeHead(200, {'Content-Type':'text/html'});
+			res.end(data);
 	});
 });	//ok
 
 app.get('/private/menuOggi', function(req,res){
-	res.writeHead(200, {'Content-Type': 'text/html'});
-
 	var text = '';
 	var orario = ['pranzo','cena'];
 	var tipo = ['primo','secondo','contorno'];
@@ -162,6 +161,7 @@ app.get('/private/menuOggi', function(req,res){
 					bind.toFile('private/menuOggi.html',{
 						tabella: text
 					},function(data){
+						res.writeHead(200, {'Content-Type':'text/html'});
 						res.end(data);
 					});
 				}
@@ -171,15 +171,13 @@ app.get('/private/menuOggi', function(req,res){
 });	//ok
 
 app.get('/private/choose', function(req,res){
-	
 
 	var text = '';
 	var orario = ['pranzo','cena'];
 	var tipo = ['primo','secondo','contorno'];
 	
-	
 	db.launchQuery({
-		text: 'select count(*) as num from sceglie where id_utente = $1 and data = now() + interval \'1 day\'',
+		text: 'select count(*) as num from sceglie where id_utente = $1 and data::date = (now() + interval \'1 day\')::date',
 		values: [req.session.user.id]
 	}, function(err,ret){
 		console.log(ret);
@@ -249,8 +247,9 @@ app.get('/private/choose', function(req,res){
 			});	
 		} else{
 			bind.toFile('private/scegli.html',{
-				tabella: 'Hai già effettuato la prenotazione per domani' + tx.link('/private/cancella',Rifalla)
+				tabella: 'Hai già effettuato la prenotazione per domani' + tx.link('/private/cancella',' - Eliminala e riscegli - ')
 			},function(data){
+				res.writeHead(200, {'Content-Type':'text/html'});
 				res.end(data);
 			});
 		}
@@ -263,8 +262,8 @@ app.post('/private/insertScegli',function(req,res){
 	for(c in req.body){
 		console.log(c);
 		query.push({
-			text: 'insert into sceglie (id_utente,id_menu,data) values ($1,$2,$3)',
-			values: [req.session.user.id,parseInt(req.body[c]),(new Date())]
+			text: 'insert into sceglie (id_utente,id_menu,data) values ($1,$2,now() + interval \'1 day\')',
+			values: [req.session.user.id,parseInt(req.body[c])]
 		});
 	}
 	db.launchDeepQuery(query,0,function(err) {
@@ -275,7 +274,8 @@ app.post('/private/insertScegli',function(req,res){
 
 app.get('/private/cancella',function(req,res){
 	db.launchQuery({
-		text: 'delete from sceglie where id_utente = $1 and data = now() + interval \'1 day\''
+		text: 'delete from sceglie where id_utente = $1 and data::date = (now() + interval \'1 day\')::date',
+		values: [req.session.user.id]
 	}, function(err,result){
 		if(err){
 			res.redirect('/error');
@@ -283,72 +283,60 @@ app.get('/private/cancella',function(req,res){
 	});
 });
 
-app.get('/private/prova',function(req,res){
-	
-	var pgClient = new pg.Client(connectionString);
-	pgClient.connect();
-	var query = pgClient.query("SELECT * from sceglie;");
-});
-
 app.get('/private/vota',function(req,res){
-	pg.connect(
-		connectionString, 
-		function(err, client, done) {
+	db.launchQuery({
+		text: 'select * from sceglie,menu,pasti where sceglie.id_utente = $1 and sceglie.voto = 0 and sceglie.id_menu = menu.id and menu.id_pasti = pasti.id order by data;',
+		values: [req.session.user.id]
+	}, function(err, result) {
+		if (err) res.redirect('/error');
+		else {
+			var text = '';
+			text += tx.openRiga();
+			text += tx.openColonna(3) + tx.setDim('Immagine',4) + tx.closeColonna();
+			text += tx.openColonna(3) + tx.setDim('Nome e data',4) + tx.closeColonna();
+			text += tx.openColonna(3) + tx.setDim('Descrizione',4) + tx.closeColonna();
+			text += tx.openColonna(3) + tx.setDim('Voto',4) + tx.closeColonna();
+			text += tx.closeRiga();
 
-			client.query({
-				text: 'select * from sceglie,menu,pasti where sceglie.id_utente = $1 and sceglie.voto = 0 and sceglie.id_menu = menu.id and menu.id_pasti = pasti.id order by data;',
-				values: [req.session.user.id]
-			}, function(err, result) {
-				done();
-				if (err) res.redirect('/error');
-		  		else {
-					var text = '';
-					text += '<div class=\"row\">';
-					text += '<div class=\"col-md-3\"><h4>Immagine</h4></div>';
-					text += '<div class=\"col-md-3\"><h4>Nome e Data</h4></div>';
-					text += '<div class=\"col-md-3\"><h4>Descrizione</h4></div>';
-					text += '</div>';
-					
-					text += '<form action=\"/private/addVoto\" method=\"post\">';
-					for(i = 0; i < result.rows.length; i++){
-						var row = result.rows[i];
-						text += '<div class=\"row\">';
-						text += '<div class=\"col-md-3\">';
-						text += '<img src=\"' + row.fotopath + '\" alt=\"immagine non disponibile\">';
-						text += '</div>';
-						text += '<div class=\"col-md-3\">';
-						text += '<h4>' + row.nome +'</h4><br>';
-						text += '<h5>' + row.data.toDateString() + '</h5>';
-						text += '<h5>' + row.tipo + ' - ' + row.orario + '</h5>';
-						text += '</div>';
-						text += '<div class=\"col-md-3\">';
-						text += '<h4>' + row.descr +'</h4>';
-						text += '</div>';
-						text += '<div class=\"col-md-3\">';
-						text += '<input type=\"radio\" name=\"' + row.id_menu + '\" value=\"' + 0 + '\" checked>' + 'No vote' + ' |';
-						text += '<input type=\"radio\" name=\"' + row.id_menu + '\" value=\"' + 1 + '\">' + 1 + ' |';
-						text += '<input type=\"radio\" name=\"' + row.id_menu + '\" value=\"' + 2 + '\">' + 2 + ' |';
-						text += '<input type=\"radio\" name=\"' + row.id_menu + '\" value=\"' + 3 + '\">' + 3 + ' |';
-						text += '<input type=\"radio\" name=\"' + row.id_menu + '\" value=\"' + 4 + '\">' + 4 + ' |';
-						text += '<input type=\"radio\" name=\"' + row.id_menu + '\" value=\"' + 5 + '\">' + 5;
-						text += '</div>';
-						text += '</div>';
-						text += '<div class=\"row\"><hr></div>';	//riga di separazione
-					}
-					text += '<div class=\"row\">';
-					text += '<div class=\"col-md-4\"></div>';
-					text += '<div class=\"col-md-4\"><button type=\"submit\">Aggiungi Voti!</button></div>';
-					text += '<div class=\"col-md-4\"></div>';
-					text += '</div>';
-					text += '</form>';
-					
-					bind.toFile('private/vota.html',{
-						tabella: text
-					},function(data){
-						res.end(data);
-					})
-				}
-			});
+			text += tx.openForm('/private/addVoto','post');
+			for(i in result.length){
+				text += tx.addInterlinea();
+				text += tx.openRiga();
+				text += tx.openColonna(3);
+				text += tx.addImg(result[i].fotopath);
+				text += tx.closeColonna();
+				text += tx.openColonna(3);
+				text += tx.setDim(result[i].nome,4);
+				text += tx.setDim(result[i].data.toDateString(),5);
+				text += tx.setDim(result[i].tipo + ' - ' + result[i].orario,5);
+				text += tx.closeColonna();
+				text += tx.openColonna(3);
+				text += tx.setDim(result[i].descr,5);
+				text += tx.closeColonna();
+				text += tx.openColonna(3);
+				text += tx.addInputChecked('radio',result[i].id_menu,0) + tx.setDim('No vote',4) + tx.aCapo();
+				text += tx.addInput('radio',result[i].id_menu,1) + tx.setDim('1',4) + tx.aCapo();
+				text += tx.addInput('radio',result[i].id_menu,2) + tx.setDim('2',4) + tx.aCapo();
+				text += tx.addInput('radio',result[i].id_menu,3) + tx.setDim('3',4) + tx.aCapo();
+				text += tx.addInput('radio',result[i].id_menu,4) + tx.setDim('4',4) + tx.aCapo();
+				text += tx.addInput('radio',result[i].id_menu,5) + tx.setDim('5',4) + tx.aCapo();
+				text += tx.closeColonna();
+				text += tx.closeRiga();			
+			}
+			text += tx.openRiga();
+			text += tx.openColonna(4) + tx.closeColonna();
+			text += tx.openColonna(4) + tx.formButton('Aggiungi Voti!') + tx.closeColonna();
+			text += tx.openColonna(4) + tx.closeColonna();
+			text += tx.closeRiga();
+			text += tx.closeForm();
+
+			bind.toFile('private/vota.html',{
+				tabella: text
+			},function(data){
+				res.writeHead(200, {'Content-Type':'text/html'});
+				res.end(data);
+			})
+		}
 	});
 });
 
@@ -373,7 +361,6 @@ app.post('/private/addAllergia', function(req,res){
 		text: 'insert into intollerante (id_utente,id_allergie) values ($1,$2);',
 		values: [req.session.user.id,parseInt(req.body.id_allergie)]
 	}, function(err, result) {
-		done();
 		if (err) res.redirect('/error');
 		else res.redirect('/private/allergie');
 	});
@@ -384,7 +371,6 @@ app.post('/private/removeAllergia', function(req,res){
 		text: 'delete from intollerante where id_utente = $1 and id_allergie = $2;',
 		values: [req.session.user.id,parseInt(req.body.id_allergie)]
 	}, function(err, result) {
-		done();
 		if (err) res.redirect('/error');
 		else res.redirect('/private/allergie');
 	});
@@ -392,55 +378,51 @@ app.post('/private/removeAllergia', function(req,res){
 
 app.get('/private/allergie', function(req,res){
 	//connect to database
-	pg.connect(
-		connectionString, 
-		function(err, client, done) {
-			var text1 = '';
-			var text2 = '';
+	var text1 = '';
+	var text2 = '';
 			
-			client.query({
-				text: 'select * from allergie, intollerante where intollerante.id_utente = $1 and allergie.id = intollerante.id_allergie;',
-				values: [req.session.user.id]
-			}, function(err, result) {
-				done();
-				if (err) res.redirect('/error');
-		  		else {
-					for(i = 0; i < result.rows.length; i++){
-						text1 += '<div class=\"row\">';
-						text1 += '<div class=\"col-md-8\">' + result.rows[i].nome + '</div>';
-						text1 += '<div class=\"col-md-4\"><form action=\"/private/removeAllergia\" method=\"post\">';
-						text1 += '<input type=\"text\" hidden name=\"id_allergie\" value=\"' + result.rows[i].id + '\"/>';
-						text1 += '<button type=\"submit\">Rimuovi</button>';
-						text1 += '</form></div>';
-						text1 += '</div>';
-					}
-				}
-			});
-			
-			client.query({
+	db.launchQuery({
+		text: 'select * from allergie, intollerante where intollerante.id_utente = $1 and allergie.id = intollerante.id_allergie;',
+		values: [req.session.user.id]
+	}, function(err, result) {
+		if (err) res.redirect('/error');
+		else {
+			for(i = 0; i < result.length; i++){
+				text1 += tx.openRiga();
+				text1 += tx.openColonna(8) + tx.setDim(result[i].nome,4);
+				text1 += tx.closeColonna();
+				text1 += tx.openColonna(4) + tx.openForm('/private/removeAllergia','post');
+				text1 += tx.addInputHidden('text','id_allergie',result[i].id);
+				text1 += tx.formButton("Aggiungi!");
+				text1 += tx.closeForm();
+				text1 += tx.closeColonna();
+				text1 += tx.closeRiga();
+			}
+			db.launchQuery({
 				text: 'select * from allergie;'
 			}, function(err, result) {
-				done();
 				if (err) res.redirect('/error');
-		  		else {
-					for(i = 0; i < result.rows.length; i++){
-						text2 += '<option value=\"' + result.rows[i].id + '\">' + result.rows[i].nome + '</option>';
+				else {
+					for(i = 0; i < result.length; i++){
+						text2 += tx.addOption(result[i].id,result[i].nome);
 					}
 					bind.toFile('private/gestisciAllergie.html',
-						{
-							tabella: text1,
-							selezione: text2
-						},
-						function(data){
-							res.send(data);
+					{
+						tabella: text1,
+						selezione: text2
+					},
+					function(data){
+						res.writeHead(200, {'Content-Type':'text/html'});
+						res.end(data);
 					});
 				}
 			});
+		}
 	});
 });
 
 app.use('/error',function(req,res){
-	bind.toFile('error_page.html',{},function(data){ res.send(data); });
+	bind.toFile('error_page.html',{},function(data){ res.writeHead(200, {'Content-Type':'text/html'}); res.end(data); });
 });
 
 
