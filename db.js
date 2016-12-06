@@ -4,7 +4,7 @@ var connectionString = process.env.DATABASE_URL ||
 
 var pg = require('pg');
 
-function lauchQuery(queryString,callback){
+function launchQuery(queryString,callback){
 	//connect to database
 	pg.connect(
 		//enviromental variable, set by heroku when first databse is created
@@ -25,6 +25,34 @@ function lauchQuery(queryString,callback){
   	});
 }
 
+function launchDeepQuery(queryString,q,callback){
+	//connect to database
+	pg.connect(
+		//enviromental variable, set by heroku when first databse is created
+		connectionString, 
+		function(err, client, done) {
+			//query
+			client.query(queryString[q], function(err, result) {
+				//release the client back to the pool
+				done();
 
-exports.lauchQuery = lauchQuery;
+				if(err){
+					console.log("Errore, ritorno male");
+					callback(true);
+				}
+				else if(q == queryString.length-1){
+					console.log("Profondità massima raggiunta, ritorno ok");
+					callback(false);
+				} else{
+					console.log("Ricorro con q:" + q);
+					launchDeepQuery(queryString,q+1,callback);
+				}
+			});
+	});
+}
+
+
+exports.launchQuery = launchQuery;
+exports.launchDeepQuery = launchDeepQuery;
+
 

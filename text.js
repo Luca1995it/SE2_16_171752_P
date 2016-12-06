@@ -13,6 +13,7 @@ exports.openForm = openForm;
 exports.closeForm = closeForm;
 exports.addInput = addInput;
 exports.formButton = formButton;
+exports.link = link;
 
 function intestazione(testo,dim){
 	return '<div class=\"row\">' + setDim(testo,dim).toUpperCase() + '</div>';
@@ -72,4 +73,8 @@ function addInput(type,name,value){
 
 function formButton(text){
 	return '<button type=\"submit\">' + text + '</button>';
+}
+
+function link(src,text){
+	return '<a href=\"' + src + '\">' + text + '</a>';
 }

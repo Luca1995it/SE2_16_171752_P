@@ -86,7 +86,7 @@ app.post('/accedi', function(req,res){
 	var query = { text: 'select * from utenti where username = $1 and password = $2',
 			values: [req.body.username,req.body.password] }
 	
-	db.lauchQuery(query, function(err,result){
+	db.launchQuery(query, function(err,result){
 		if(err){
 			res.redirect('/error');
 		}
@@ -121,7 +121,7 @@ app.get('/private/menuOggi', function(req,res){
 	var orario = ['pranzo','cena'];
 	var tipo = ['primo','secondo','contorno'];
 	
-	db.lauchQuery({
+	db.launchQuery({
 		text: 'select * from (select * from (select * from utenti natural join sceglie where utenti.id = $1 and sceglie.data = now()) as res, menu where res.id_menu = menu.id and giorno = $2) as x, pasti where x.id_pasti = pasti.id;',
 		values: [req.session.user.id,(new Date()).getDay()]
 	}, function(err,result) {
@@ -135,7 +135,7 @@ app.get('/private/menuOggi', function(req,res){
 			//	text += tx.intestazione('Nessun pasto selezionato',5);
 			//} else text += tx.addRigaMenu(result);
 			
-			db.lauchQuery({
+			db.launchQuery({
 				text: 'select contiene.id_menu from intollerante, contiene where intollerante.id_utente = $1 and intollerante.id_allergie = contiene.id_allergie;',
 				values: [req.session.user.id]
 			}, function(err,allergie){
@@ -171,29 +171,31 @@ app.get('/private/menuOggi', function(req,res){
 });	//ok
 
 app.get('/private/choose', function(req,res){
-	res.writeHead(200, {'Content-Type': 'text/html'});
+	
 
 	var text = '';
 	var orario = ['pranzo','cena'];
 	var tipo = ['primo','secondo','contorno'];
 	
 	
-	db.lauchQuery({
-		text: 'select count(*) as num from scegli where id_utente = $1 and data = now() + interval \'1 day\''
-	}, function(err,result){
+	db.launchQuery({
+		text: 'select count(*) as num from sceglie where id_utente = $1 and data = now() + interval \'1 day\'',
+		values: [req.session.user.id]
+	}, function(err,ret){
+		console.log(ret);
 		if(err){
 			res.redirect('/error');
 		}
-		if(parseInt(result[0].num) == 0){
-			db.lauchQuery({
-				text: 'select * from menu, pasti where giorno = extract(DOW FROM now() + interval \'1 day\') and menu.id_pasti = pasti.id;'
+		if(parseInt(ret[0].num) == 0){
+			db.launchQuery({
+				text: 'select *, menu.id as toid from menu, pasti where giorno = extract(DOW FROM now() + interval \'1 day\') and menu.id_pasti = pasti.id;'
 			}, function(err,result) {
 				if(err){
 					res.redirect('/error');
 				}
 				else {
 
-					db.lauchQuery({
+					db.launchQuery({
 						text: 'select contiene.id_menu from intollerante, contiene where intollerante.id_utente = $1 and intollerante.id_allergie = contiene.id_allergie;',
 						values: [req.session.user.id]
 					}, function(err,allergie){
@@ -220,7 +222,7 @@ app.get('/private/choose', function(req,res){
 											text += tx.setDim(result[i].descr,5);
 											text += tx.closeColonna();
 											text += tx.openColonna(2);
-											text += tx.addInput('radio',result[i].tipo[t]+'-'+orario[t],result[i].id_menu);
+											text += tx.addInput('radio',tipo[t]+orario[o],result[i].toid);
 											text += tx.closeColonna();
 											text += tx.closeRiga();
 
@@ -238,6 +240,7 @@ app.get('/private/choose', function(req,res){
 							bind.toFile('private/scegli.html',{
 								tabella: text
 							},function(data){
+								res.writeHead(200, {'Content-Type': 'text/html'});
 								res.end(data);
 							});
 						}
@@ -255,7 +258,23 @@ app.get('/private/choose', function(req,res){
 });
 
 app.post('/private/insertScegli',function(req,res){
-	db.lauchQuery({
+	console.log(req.body);
+	var query = [];
+	for(c in req.body){
+		console.log(c);
+		query.push({
+			text: 'insert into sceglie (id_utente,id_menu,data) values ($1,$2,$3)',
+			values: [req.session.user.id,parseInt(req.body[c]),(new Date())]
+		});
+	}
+	db.launchDeepQuery(query,0,function(err) {
+		if (err) res.redirect('/error');
+		else res.redirect('/private/home');
+	});
+});
+
+app.get('/private/cancella',function(req,res){
+	db.launchQuery({
 		text: 'delete from sceglie where id_utente = $1 and data = now() + interval \'1 day\''
 	}, function(err,result){
 		if(err){
@@ -264,24 +283,11 @@ app.post('/private/insertScegli',function(req,res){
 	});
 });
 
-app.get('/private/cancella',function(req,res){
-	
-});
-
 app.get('/private/prova',function(req,res){
 	
 	var pgClient = new pg.Client(connectionString);
 	pgClient.connect();
-	var query = pgClient.query("SELECT * from sceglie");
-	
-	var x = [];
-	
-	query.on("row", function(row,result){
-		result.addRow(row);
-		x.push(row);
-	});
-	
-	console.log(x);
+	var query = pgClient.query("SELECT * from sceglie;");
 });
 
 app.get('/private/vota',function(req,res){
@@ -347,58 +353,40 @@ app.get('/private/vota',function(req,res){
 });
 
 app.post('/private/addVoto',function(req,res){
-	console.log(req.body);
-	pg.connect(
-		connectionString, 
-		function(err, client, done) {
-			for(var c in req.body){
-				if(parseInt(req.body[c])!=0){
-					client.query({
-						text: 'update sceglie set voto = $1 where id_utente = $2 and id_menu = $3',
-						values: [parseInt(req.body[c]),req.session.user.id,parseInt(c)]
-					}, function(err) {
-						done();
-						if (err) res.redirect('/error');
-					});
-				}
-			}
-			res.redirect('/private/vota');
+	var query = [];
+	for(var c in req.body){
+		if(parseInt(req.body[c])!=0){
+			query.push({
+				text: 'update sceglie set voto = $1 where id_utente = $2 and id_menu = $3',
+				values: [parseInt(req.body[c]),req.session.user.id,parseInt(c)]
+			});
+		}
+	}
+	db.launchSerialInsert(query, function(err) {
+		if (err) res.redirect('/error');
 	});
+	res.redirect('/private/vota');
 });
 
 app.post('/private/addAllergia', function(req,res){
-	pg.connect(
-		connectionString, 
-		function(err, client, done) {
-
-			client.query({
-				text: 'insert into intollerante (id_utente,id_allergie) values ($1,$2);',
-				values: [req.session.user.id,parseInt(req.body.id_allergie)]
-			}, function(err, result) {
-				done();
-				if (err) res.redirect('/error');
-		  		else {
-					res.redirect('/private/allergie');
-				}
-			});
+	db.launchQuery({
+		text: 'insert into intollerante (id_utente,id_allergie) values ($1,$2);',
+		values: [req.session.user.id,parseInt(req.body.id_allergie)]
+	}, function(err, result) {
+		done();
+		if (err) res.redirect('/error');
+		else res.redirect('/private/allergie');
 	});
 });
 
 app.post('/private/removeAllergia', function(req,res){
-	pg.connect(
-		connectionString, 
-		function(err, client, done) {
-
-			client.query({
-				text: 'delete from intollerante where id_utente = $1 and id_allergie = $2;',
-				values: [req.session.user.id,parseInt(req.body.id_allergie)]
-			}, function(err, result) {
-				done();
-				if (err) res.redirect('/error');
-		  		else {
-					res.redirect('/private/allergie');
-				}
-			});
+	db.launchQuery({
+		text: 'delete from intollerante where id_utente = $1 and id_allergie = $2;',
+		values: [req.session.user.id,parseInt(req.body.id_allergie)]
+	}, function(err, result) {
+		done();
+		if (err) res.redirect('/error');
+		else res.redirect('/private/allergie');
 	});
 });
 
@@ -454,9 +442,6 @@ app.get('/private/allergie', function(req,res){
 app.use('/error',function(req,res){
 	bind.toFile('error_page.html',{},function(data){ res.send(data); });
 });
-
-
-
 
 
 
