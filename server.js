@@ -1,3 +1,4 @@
+//classe utente, utilizzata per memorizzare un utente nella sessione e permettere di accedere ad aree private
 function utente(id,username,password,via){
 		this.id = id;
 		this.username = username;
@@ -8,93 +9,97 @@ function utente(id,username,password,via){
 			return 'Utente con id: ' + id + ', con nome: ' + username + ', con password: ' + password + ', che abita in via ' + via;
 		}
 }
-
+//express, un web-server js basato su node.js
 var express = require('express');
 
+//bind, usata per gestire template su node.js
 var bind = require('bind');
 
+//modulo che contiene le funzioni necessarie alla memorizzazione di dati sul database heroku
 var db = require('./db.js');
+
+//modulo che contiene tutte le primitive necessarie a gestire codice HTML con javascript
 var tx = require('./text.js');
 
+//dichiaro la variabile app come istanza di express su cui farò girare tutti i middleware
 var app = express();
 
-//connect DB libraries
-var pg = require('pg');
-
-//util libraries
-var util = require('util');
-
-//manages sessions
+//importo la libreria necessara a gestire le sessioni del web-server
 var session = require('express-session')
 
-//db_url if process.env.DATABASE_URL does not work
-var connectionString = process.env.DATABASE_URL || 
-	'postgres://keyivvkxtdtdvz:dtrZkEkbep1o7SjFYF9APp_T4F@ec2-54-235-177-45.compute-1.amazonaws.com:5432/d6dc0imrseapqc?ssl=true';
-
-//a middleware for json parsing
+//funzione middleware per il json parsing
 var bodyParser = require('body-parser');
 
-/* This example demonstrates adding a generic 
-JSON and urlencoded parser as a 
-top-level middleware, which will parse 
-the bodies of all incoming requests. This is the simplest setup. */
+//Inserisco JSON e urlencoded parser come top-level middleware che faranno il parsing del body di ogni richiesta
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
+//setto la porta di ascolto del web.server a process.env.PORT se è definita, 5000 altrimenti
 app.set('port', (process.env.PORT || 5000));
 
+//i file in assets e foto potranno essere richiesti senza una espressa funzione middleware che si occupi per ognuno di loro
 app.use(express.static('assets'));
 app.use(express.static('foto'));
 
 //use sessions
 app.use(session({ 
-	//required, used to prevent tampering
+	//richiesta, per prevenire manomissione dei cookie da parte degli utenti
 	secret: 'string for the hash', 
-	//set time of validity of cookies
+	//tempo di vita dei cookie - 1 ora (in millisecondi)
 	cookie: { maxAge: 60 * 60 * 1000 }
 }));
 
+//filtro che si occupa reindirizzare alla home tutte le richieste "generiche" del tipo /
 app.use('/$',function(req,res){
+	//reindirizzo al middleware che si occupa della home page
 	res.redirect('/private/home');
 });
 
-//funzione filtro per non autenticati
+// filtro per non autenticati, protegge la sezione private da chi non è loggato
 app.use('/private/*', function(req,res,next){
+	//se l'utente è loggato permetto il proseguimento ...
 	if(req.session.user != undefined) next();
 	
-	else bind.toFile('private/login.html',{
-		messaggioErrore: "Inserisci le tue credenziali"
-	}, function(data){
-		res.writeHead(200, {'Content-Type':'text/html'});
-		res.end(data);
-	})
+	//... altrimenti rimando alla pagina di login
+	else res.redirect('/login');
 });
 
-//ritorno pagina di login
+//ritorno pagina di login con il messaggio standard di richiesta delle credenziali
 app.use('/login', function(req,res){
+	
 	bind.toFile('private/login.html',{
+		//messaggio che verrà mostrato sopra il form
 		messaggioErrore: "Inserisci le tue credenziali"
 	}, function(data){
+		//setto l'header della risposta con statusCode 200 (OK) e contenuto di tipo pagina html
 		res.writeHead(200, {'Content-Type':'text/html'});
 		res.end(data);
 	});
-});		//ok
+});
 
 //funzione di autenticazione
 app.post('/accedi', function(req,res){
 	
+	//dichiaro la query che dovrà essere eseguita con gli specificatori di formato $1 e $2,
+	//che saranno automaticamente rimpiazzati dai valori che l'utente ha inserito nel form
 	var query = { text: 'select * from utenti where username = $1 and password = $2',
-			values: [req.body.username,req.body.password] }
+			//grazie a body-parser, accedere ai campi del form è davvero semplice: req.body.nome_dell_input
+			values: [req.body.username,req.body.password] 
+	};
 	
+	//lancio la funzione launchQuery definita in db.js, permette di eseguire una query ed infine chiama la funzione come secondo parametro
+	//result è l'array che contiene le righe risultate dalla query
 	db.launchQuery(query, function(err,result){
+		//se c'è stato un errore, rimando a error
 		if(err){
 			res.redirect('/error');
 		}
-		else if(result.length>0){
+		//altrimenti controllo che sia stato trovato un utente con quel username e quella password
+		else if(result.length==1){
 			req.session.user = new utente(result[0].id,result[0].username,result[0].password,result[0].via);
-			console.log("Logged user: " + req.session.user.username);
 			res.redirect('/private/home');
 		}
+		//infine, se utente e password erano errati, rimando al login con un messaggio 
 		else {
 			bind.toFile('private/login.html',{
 				messaggioErrore: "Username o password errati"
@@ -104,22 +109,27 @@ app.post('/accedi', function(req,res){
 			});
 		}
 	});
-});	//ok
+});
 
-app.get('/private/home',function(req,res){		//ok
+//ritono la home page modificata con i parametri dell'utente loggato in modo che sia personalizzata
+app.get('/private/home',function(req,res){
 	bind.toFile('private/home.html',
-		{},
+		req.session.user,
 		function(data){
 			res.writeHead(200, {'Content-Type':'text/html'});
 			res.end(data);
 	});
-});	//ok
+});
 
+//ritorna il menù che è stato scelto per oggi, anche vuoto in caso l'utente non abbia scelto niente il giorno precedente
 app.get('/private/menuOggi', function(req,res){
+	//text sarà la variabile che conterrà il codice HTML che verrà aggiunto al file menuOggi.html
 	var text = '';
+	//orario e tipo mi permetteranno di ordinare i risultati della ricerca e mostrarli di conseguenza
 	var orario = ['pranzo','cena'];
 	var tipo = ['primo','secondo','contorno'];
 	
+	//lancio la query per estrarre i piatti scelti per oggi
 	db.launchQuery({
 		text: 'select * from (select * from (select * from utenti natural join sceglie where utenti.id = $1 and sceglie.data = now()) as res, menu where res.id_menu = menu.id and giorno = $2) as x, pasti where x.id_pasti = pasti.id;',
 		values: [req.session.user.id,(new Date()).getDay()]
@@ -128,12 +138,7 @@ app.get('/private/menuOggi', function(req,res){
 			res.redirect('/error');
 		}
 		else {
-			
-			//text += tx.intestazione(orario[o] + ' - ' + tipo[t],4);
-			//if(result.length < 1){
-			//	text += tx.intestazione('Nessun pasto selezionato',5);
-			//} else text += tx.addRigaMenu(result);
-			
+			//lancio una seconda query per estrarre tutti i menù a cui l'utente è allergico
 			db.launchQuery({
 				text: 'select contiene.id_menu from intollerante, contiene where intollerante.id_utente = $1 and intollerante.id_allergie = contiene.id_allergie;',
 				values: [req.session.user.id]
@@ -141,23 +146,32 @@ app.get('/private/menuOggi', function(req,res){
 				if(err){
 					res.redirect('/error');
 				} else{
-					for(o in orario){
-						for(t in tipo){
-							var least = false;
-							text += tx.intestazione(orario[o] + " - " + tipo[t]);
-							for(i in result){
-								if(result[i].tipo == tipo[t] && result[i].orario == orario[o]){
-									least = true;
-									text += tx.addInterlinea();
-									text += tx.addRiga(result[i]);
-									for(a in allergie){
-										if(allergie[a].id_menu == result[i].id_menu) text += tx.alertMessage('Contiene allergeni',red,5);
+					//per ogni orario (pranzo e cena) estraggo i pasti di ogni tipo (primo,secondo,contorno) e li aggiungo come testo html
+					//se non ho risultati stampo un messaggio
+					if(result.length == 0) text += tx.addRigaInterlinea('Nessun pasto trovato');
+					else{
+						for(o in orario){
+							for(t in tipo){
+								text += tx.intestazione(orario[o] + " - " + tipo[t]);
+								for(i in result){
+									if(result[i].tipo == tipo[t] && result[i].orario == orario[o]){
+										least = true;
+										//aggiunge una separazione tra righe come <hr>
+										text += tx.addInterlinea();
+										//aggiunge una riga preformattata contenente l'immagine, il nome e la decrizione del piatto
+										text += tx.addRiga(result[i]);
+										//se un dei piatti a cui l'utente è allergico coincide con quello scelto, aggiungo una riga di avvertimento
+										for(a in allergie){
+											if(allergie[a].id_menu == result[i].id_menu) text += tx.alertMessage('Contiene allergeni',red,5);
+										}
 									}
 								}
+
+
 							}
-							if(!least) text += tx.addRigaInterlinea('Nessun pasto trovato');
 						}
 					}
+					//aggiungo il contenuto a menuOggi.html sotto l'identificatore tabella
 					bind.toFile('private/menuOggi.html',{
 						tabella: text
 					},function(data){
@@ -168,14 +182,16 @@ app.get('/private/menuOggi', function(req,res){
 			});
 		}
 	});		
-});	//ok
+});
 
+//middleware chiamato per ritornare la lista dei piatti che è possibile scegliere per il giorno successivo, racchiusi in un opportuno form
 app.get('/private/choose', function(req,res){
-
+	//variabile per testo html che verrà inserito nel file html
 	var text = '';
 	var orario = ['pranzo','cena'];
 	var tipo = ['primo','secondo','contorno'];
 	
+	//prima di tutto controllo che l'utente non avesse già effettuato l'ordine con la seguente query
 	db.launchQuery({
 		text: 'select count(*) as num from sceglie where id_utente = $1 and data::date = (now() + interval \'1 day\')::date',
 		values: [req.session.user.id]
@@ -184,15 +200,17 @@ app.get('/private/choose', function(req,res){
 		if(err){
 			res.redirect('/error');
 		}
+		//se non è ancora stato selezionato nessun pasto per domani
 		if(parseInt(ret[0].num) == 0){
 			db.launchQuery({
+				//estraggo tutti i piatti disponibili il giorno successivo (i pasti si ripetono settimanalmente)
 				text: 'select *, menu.id as toid from menu, pasti where giorno = extract(DOW FROM now() + interval \'1 day\') and menu.id_pasti = pasti.id;'
 			}, function(err,result) {
 				if(err){
 					res.redirect('/error');
 				}
 				else {
-
+					//cerco eventali piatti a cui l'utente potrebbe essere allergico
 					db.launchQuery({
 						text: 'select contiene.id_menu from intollerante, contiene where intollerante.id_utente = $1 and intollerante.id_allergie = contiene.id_allergie;',
 						values: [req.session.user.id]
@@ -200,36 +218,41 @@ app.get('/private/choose', function(req,res){
 						if(err){
 							res.redirect('/error');
 						} else{
+							//apro un form nel testo html che andrò ad inserire
 							text += tx.openForm('/private/insertScegli','post');
+							//itero su orario (pranzo,cena) e poi su tipo (primo,secondo,contorno) per estrarre i pasti e mostrarli in ordine
 							for(o in orario){
 								for(t in tipo){
-									var least = false;
+									//inserisco un intestazione del tipo PRANZO - SECONDI
 									text += tx.intestazione(orario[o] + " - " + tipo[t],3);
-									for(i in result){
-										if(result[i].tipo == tipo[t] && result[i].orario == orario[o]){
-											least = true;
-											text += tx.addInterlinea();
-											text += tx.openRiga();
-											text += tx.openColonna(4);
-											text += tx.addImg(result[i].fotopath);
-											text += tx.closeColonna();
-											text += tx.openColonna(3);
-											text += tx.setDim(result[i].nome,4);
-											text += tx.closeColonna();
-											text += tx.openColonna(3);
-											text += tx.setDim(result[i].descr,5);
-											text += tx.closeColonna();
-											text += tx.openColonna(2);
-											text += tx.addInput('radio',tipo[t]+orario[o],result[i].toid);
-											text += tx.closeColonna();
-											text += tx.closeRiga();
-
-											for(a in allergie){
-												if(allergie[a].id_menu == result[i].id_menu) text += tx.alertMessage('Contiene allergeni',red,5);
+									//se non è disponibile nessun pasto (non dovrebbe accadere) mostro un semplice messaggio
+									if (result.length == 0) text += tx.addRigaInterlinea('Nessun pasto trovato');
+									//altrimenti creo una semplice tabella html con le primitive definite nel file text.js
+									else{
+										for(i in result){
+											if(result[i].tipo == tipo[t] && result[i].orario == orario[o]){
+												text += tx.addInterlinea();
+												text += tx.openRiga();
+												text += tx.openColonna(4);
+												text += tx.addImg(result[i].fotopath);
+												text += tx.closeColonna();
+												text += tx.openColonna(3);
+												text += tx.setDim(result[i].nome,4);
+												text += tx.closeColonna();
+												text += tx.openColonna(3);
+												text += tx.setDim(result[i].descr,5);
+												text += tx.closeColonna();
+												text += tx.openColonna(2);
+												text += tx.addInput('radio',tipo[t]+orario[o],result[i].toid);
+												text += tx.closeColonna();
+												text += tx.closeRiga();
+												//se un dei piatti a cui l'utente è allergico coincide con quello scelto, aggiungo una riga di avvertimento
+												for(a in allergie){
+													if(allergie[a].id_menu == result[i].id_menu) text += tx.alertMessage('Contiene allergeni',red,5);
+												}
 											}
 										}
-									}
-									if (!least) text += tx.addRigaInterlinea('Nessun pasto trovato');
+									} 
 								}
 							}
 							text += tx.addInterlinea();
@@ -245,7 +268,10 @@ app.get('/private/choose', function(req,res){
 					});
 				}
 			});	
-		} else{
+		} 
+		//se era già stato selezionato un pasto per il giorno successivo inserisco un messaggio e la possibilità di rifare la prenotazione
+		//cancellando quella precedente con il middleware /private/cancella
+		else{
 			bind.toFile('private/scegli.html',{
 				tabella: 'Hai già effettuato la prenotazione per domani' + tx.link('/private/cancella',' - Eliminala e riscegli - ')
 			},function(data){
@@ -256,22 +282,24 @@ app.get('/private/choose', function(req,res){
 	});
 });
 
+//inserisce nel database le scelte fatte dall'utente nella scelta del menu per il giorno successivo
 app.post('/private/insertScegli',function(req,res){
-	console.log(req.body);
+	//creo un array di query che dovranno essere eseguite dalla funzione launchDeepQuey
 	var query = [];
 	for(c in req.body){
-		console.log(c);
 		query.push({
 			text: 'insert into sceglie (id_utente,id_menu,data) values ($1,$2,now() + interval \'1 day\')',
 			values: [req.session.user.id,parseInt(req.body[c])]
 		});
 	}
+	//lancio le query dicendo di partire dalla prima (0) nell'array e di eseguire, una volta terminato, la funzione come secondo paramentro
 	db.launchDeepQuery(query,0,function(err) {
 		if (err) res.redirect('/error');
 		else res.redirect('/private/home');
 	});
 });
 
+//middleware per rimuovere dal database tutte le prenotazioni fatte per l'indomani, quando l'utente dedice di volerle rifare
 app.get('/private/cancella',function(req,res){
 	db.launchQuery({
 		text: 'delete from sceglie where id_utente = $1 and data::date = (now() + interval \'1 day\')::date',
@@ -279,10 +307,13 @@ app.get('/private/cancella',function(req,res){
 	}, function(err,result){
 		if(err){
 			res.redirect('/error');
+			//rimando alla funzione per rieseguire la scelta dei piatti per il giorno seguente
 		} else res.redirect('/private/choose');
 	});
 });
 
+//mostra una lista di pasti consumati per il quale non è ancora stato rilasciato un voto.
+//nel db il valore 0 indica ancora senza voto, mentre i valori da 1 a 5 indicano che il voto è stato registrato correttamente
 app.get('/private/vota',function(req,res){
 	db.launchQuery({
 		text: 'select * from sceglie,menu,pasti where sceglie.id_utente = $1 and sceglie.voto = 0 and sceglie.id_menu = menu.id and menu.id_pasti = pasti.id order by data;',
@@ -290,6 +321,10 @@ app.get('/private/vota',function(req,res){
 	}, function(err, result) {
 		if (err) res.redirect('/error');
 		else {
+			//variabile di tipo stringa in cui memorizzo il testo che aggiungerà codice html al file vota.html
+			//viene aggiunta un'intestazione e un form/tabella contenente i vari piatti consumati,
+			//affiancati da un input radio per la scelta del voto
+			//per i piatti ai quali l'utente non vuole ancora lasciare un giudizio si lascia il valore 0
 			var text = '';
 			text += tx.openRiga();
 			text += tx.openColonna(3) + tx.setDim('Immagine',4) + tx.closeColonna();
@@ -340,9 +375,12 @@ app.get('/private/vota',function(req,res){
 	});
 });
 
+//middleware che si occupa della registrazione dei voti sul database
+//i voti vengono controllati perchè quelli con valore 0 non hanno senso ad riscritti uguali nel db
 app.post('/private/addVoto',function(req,res){
+	//creo array di query da eseguire per aggiornare i voti sul db
 	var query = [];
-	for(var c in req.body){
+	for(c in req.body){
 		if(parseInt(req.body[c])!=0){
 			query.push({
 				text: 'update sceglie set voto = $1 where id_utente = $2 and id_menu = $3',
@@ -350,12 +388,15 @@ app.post('/private/addVoto',function(req,res){
 			});
 		}
 	}
-	db.launchSerialInsert(query, function(err) {
+	//lancio la serie di query con la funzione launchDeep query, 
+	//che al termine di tutto il suo lavoro chiama la funzione passata come secondo argomento
+	db.launchDeepInsert(query,0,function(err) {
 		if (err) res.redirect('/error');
+		else res.redirect('/private/vota');
 	});
-	res.redirect('/private/vota');
 });
 
+//middleware chiamato per aggiungere un'allergia dell'utente corrente sul database
 app.post('/private/addAllergia', function(req,res){
 	db.launchQuery({
 		text: 'insert into intollerante (id_utente,id_allergie) values ($1,$2);',
@@ -366,6 +407,7 @@ app.post('/private/addAllergia', function(req,res){
 	});
 });
 
+//middleware chiamato per rimuovere un'allergia dell'utente corrente sul database
 app.post('/private/removeAllergia', function(req,res){
 	db.launchQuery({
 		text: 'delete from intollerante where id_utente = $1 and id_allergie = $2;',
@@ -377,16 +419,18 @@ app.post('/private/removeAllergia', function(req,res){
 });
 
 app.get('/private/allergie', function(req,res){
-	//connect to database
+	//due variabili di tipo stringa per memorizzare le due parti di testo html che genero dinamicamente e che vanno aggiunte a gestisciAllergie.html
 	var text1 = '';
 	var text2 = '';
 			
 	db.launchQuery({
+		//seleziono tutte le allergie dell'utente corrente
 		text: 'select * from allergie, intollerante where intollerante.id_utente = $1 and allergie.id = intollerante.id_allergie;',
 		values: [req.session.user.id]
 	}, function(err, result) {
 		if (err) res.redirect('/error');
 		else {
+			//parte di formattazione del testo html per la visualizzazione delle allergie. Ogni allergia sarà affiancata dal bottone per rimuoverla
 			for(i = 0; i < result.length; i++){
 				text1 += tx.openRiga();
 				text1 += tx.openColonna(8) + tx.setDim(result[i].nome,4);
@@ -398,6 +442,7 @@ app.get('/private/allergie', function(req,res){
 				text1 += tx.closeColonna();
 				text1 += tx.closeRiga();
 			}
+			//aggiungo un select-field per poter scegliere ed aggiungere una nuova allergia all'utente corrente
 			db.launchQuery({
 				text: 'select * from allergie;'
 			}, function(err, result) {
@@ -421,12 +466,14 @@ app.get('/private/allergie', function(req,res){
 	});
 });
 
+//middleware chiamato nel caso in cui un errore sia stato incontrato dagli altri middleware o dal database nell'elaborazione delle richieste
+//la dichiarazione poteva essere inserita come statica in express ma in implementazioni future potrebbe 
+//trasformarsi in un template per mostrare lo specifico errore anche all'utente
 app.use('/error',function(req,res){
-	bind.toFile('error_page.html',{},function(data){ res.writeHead(200, {'Content-Type':'text/html'}); res.end(data); });
+	res.sendFile('error_page.html');
 });
 
-
-
+//metto in ascolto il sistema sulla porta precedentemente settata ed eseguo la funzione anonima per mostrare come accedere al sistema
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });

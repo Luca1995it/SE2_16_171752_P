@@ -12,6 +12,7 @@
     "jasmine": "^2.5.2",
     "pg": "^6.1.0",
     "psql": "0.0.1",
+    "swagger": "^0.7.5",
     "util": "^0.10.3"
   },
   "devDependencies": {},

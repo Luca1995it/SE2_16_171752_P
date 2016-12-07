@@ -1,3 +1,4 @@
+/* Elenco delle query necessarie a create lo schema base delle tabelle per questo progetto */
 create table utenti(
 	id serial primary key,
 	username varchar(50),
@@ -41,8 +42,3 @@ create table pasti(
 	nome varchar(50),
 	descr varchar(1024)
 );
-
-
-
-
-select contiene.id_menu from intollerante, contiene where intollerante.id_utente = 14 and intollerante.id_allergie = contiene.id_allergie;
