@@ -17,6 +17,15 @@ exports.link = link;
 exports.addInputChecked = addInputChecked;
 exports.addInputHidden = addInputHidden;
 exports.addOption = addOption;
+exports.getStringDay = getStringDay;
+exports.button = button;
+exports.openDiv = openDiv;
+exports.closeDiv = clodeDiv;
+exports.aCapo = aCapo;
+
+function aCapo(){
+	return '<br>';
+}
 
 function intestazione(testo,dim){
 	return '<div class=\"row\">' + setDim(testo,dim).toUpperCase() + '</div>';
@@ -78,6 +87,10 @@ function formButton(text){
 	return '<button type=\"submit\">' + text + '</button>';
 }
 
+function button(id,text){
+	return '<button id=\"' + id + '\">' + text + '</button>';
+}
+
 function link(src,text){
 	return '<a href=\"' + src + '\">' + text + '</a>';
 }
@@ -92,4 +105,25 @@ function addInputHidden(type,name,value){
 
 function addOption(value,text){
 	return '<option value=\"' + value + '\">' + text + '</option>';
+}
+
+function openDiv(id){
+	return '<div id=\"' + id + '\">';
+}
+
+function clodeDiv(){
+	return '</div>';
+}
+
+function getStringDay(giorno){
+	switch (giorno-0){
+			case (0): return 'Lunedì';
+			case (1): return 'Martedì';
+			case (2): return 'Mercoledì';
+			case (3): return 'Giovedì';
+			case (4): return 'Venerdì';
+			case (5): return 'Sabato';
+			case (6): return 'Domenica';
+	}
+	return undefined;
 }

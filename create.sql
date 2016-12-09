@@ -34,7 +34,8 @@ create table contiene(
 
 create table intollerante(
 	id_utente integer references utenti(id),
-	id_allergie integer references allergie(id)
+	id_allergie integer references allergie(id),
+	primary key(id_utente,id_allergie)
 );
 
 create table pasti(

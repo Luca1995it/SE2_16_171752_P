@@ -1,12 +1,11 @@
 //classe utente, utilizzata per memorizzare un utente nella sessione e permettere di accedere ad aree private
-function utente(id,username,password,via){
+function utente(id,username,via){
 		this.id = id;
 		this.username = username;
-		this.password = password;
 		this.via = via;
 	
 		this.toString = function(){
-			return 'Utente con id: ' + id + ', con nome: ' + username + ', con password: ' + password + ', che abita in via ' + via;
+			return 'Utente con id: ' + id + ', con nome: ' + username + ', che abita in via ' + via;
 		}
 }
 //express, un web-server js basato su node.js
@@ -96,7 +95,7 @@ app.post('/accedi', function(req,res){
 		}
 		//altrimenti controllo che sia stato trovato un utente con quel username e quella password
 		else if(result.length==1){
-			req.session.user = new utente(result[0].id,result[0].username,result[0].password,result[0].via);
+			req.session.user = new utente(result[0].id,result[0].username,result[0].via);
 			res.redirect('/private/home');
 		}
 		//infine, se utente e password erano errati, rimando al login con un messaggio 
@@ -148,7 +147,7 @@ app.get('/private/menuOggi', function(req,res){
 				} else{
 					//per ogni orario (pranzo e cena) estraggo i pasti di ogni tipo (primo,secondo,contorno) e li aggiungo come testo html
 					//se non ho risultati stampo un messaggio
-					if(result.length == 0) text += tx.addRigaInterlinea('Nessun pasto trovato');
+					if(result.length == 0) text += tx.intestazione('Nessun pasto ordinato per oggi',3);
 					else{
 						for(o in orario){
 							for(t in tipo){
@@ -159,7 +158,17 @@ app.get('/private/menuOggi', function(req,res){
 										//aggiunge una separazione tra righe come <hr>
 										text += tx.addInterlinea();
 										//aggiunge una riga preformattata contenente l'immagine, il nome e la decrizione del piatto
-										text += tx.addRiga(result[i]);
+										text += tx.openRiga();
+										text += tx.openColonna(4);
+										text += tx.addImg(result[i].fotopath);
+										text += tx.closeColonna();
+										text += tx.openColonna(4);
+										text += tx.setDim(result[i].nome,4);
+										text += tx.closeColonna();
+										text += tx.openColonna(4);
+										text += tx.setDim(result[i].descr,5);
+										text += tx.closeColonna();
+										text += tx.closeRiga();
 										//se un dei piatti a cui l'utente è allergico coincide con quello scelto, aggiungo una riga di avvertimento
 										for(a in allergie){
 											if(allergie[a].id_menu == result[i].id_menu) text += tx.alertMessage('Contiene allergeni',red,5);
@@ -173,6 +182,91 @@ app.get('/private/menuOggi', function(req,res){
 					}
 					//aggiungo il contenuto a menuOggi.html sotto l'identificatore tabella
 					bind.toFile('private/menuOggi.html',{
+						tabella: text
+					},function(data){
+						res.writeHead(200, {'Content-Type':'text/html'});
+						res.end(data);
+					});
+				}
+			});
+		}
+	});		
+});
+
+app.get('/private/menuSettimanale',function(req,res){
+	//text sarà la variabile che conterrà il codice HTML che verrà aggiunto al file menuOggi.html
+	var text = '';
+	//orario e tipo mi permetteranno di ordinare i risultati della ricerca e mostrarli di conseguenza
+	var giorni = [0,1,2,3,4,5,6];
+	var orario = ['pranzo','cena'];
+	var tipo = ['primo','secondo','contorno'];
+	
+	//lancio la query per estrarre i piatti scelti per il giorno in questione
+	db.launchQuery({
+		text: 'select * from menu,pasti where menu.id_pasti = pasti.id;'
+	}, function(err,result) {
+		if(err){
+			res.redirect('/error');
+		}
+		else {
+			//lancio una seconda query per estrarre tutti i menù a cui l'utente è allergico
+			db.launchQuery({
+				text: 'select contiene.id_menu from intollerante, contiene where intollerante.id_utente = $1 and intollerante.id_allergie = contiene.id_allergie;',
+				values: [req.session.user.id]
+			}, function(err,allergie){
+				if(err){
+					res.redirect('/error');
+				} else{
+					//per ogni giorno ripeto:
+					//per ogni orario (pranzo e cena) estraggo i pasti di ogni tipo (primo,secondo,contorno) e li aggiungo come testo html
+					//se non ho risultati stampo un messaggio
+					if(result.length == 0) text += tx.intestazione('Nessun pasto trovato per questa settimana, ci scusiamo');
+					else{
+						text += tx.openRiga();
+						for(g in giorni){
+							text += tx.openColonna(1);
+							text += tx.button('btn' + g, 'Mostra giorno ' + tx.getStringDay(g));
+							text += tx.closeColonna();
+						}
+						text += tx.closeRiga();
+						
+						for(g in giorni){
+							text += tx.openDiv('show' + g);
+							text += tx.aCapo();
+							text += tx.intestazione(tx.getStringDay(g));
+							for(o in orario){
+								for(t in tipo){
+									text += tx.aCapo() + tx.aCapo();
+									text += tx.intestazione(orario[o] + " - " + tipo[t]);
+									for(i in result){
+										if(result[i].tipo == tipo[t] && result[i].orario == orario[o] && result[i].giorno == giorni[g]){
+											//aggiunge una separazione tra righe come <hr>
+											text += tx.addInterlinea();
+											//aggiunge una riga preformattata contenente l'immagine, il nome e la decrizione del piatto
+											text += tx.openRiga();
+											text += tx.openColonna(4);
+											text += tx.addImg(result[i].fotopath);
+											text += tx.closeColonna();
+											text += tx.openColonna(4);
+											text += tx.setDim(result[i].nome,4);
+											text += tx.closeColonna();
+											text += tx.openColonna(4);
+											text += tx.setDim(result[i].descr,5);
+											text += tx.closeColonna();
+											text += tx.closeRiga();
+											//se un dei piatti a cui l'utente è allergico coincide con quello scelto, aggiungo una riga di avvertimento
+											for(a in allergie){
+												if(allergie[a].id_menu == result[i].id_menu) text += tx.alertMessage('Contiene allergeni',red,5);
+											}
+										}
+									}
+								}
+							}
+							text += tx.closeDiv();
+						}
+					}
+					//aggiungo il contenuto a menuOggi.html sotto l'identificatore tabella
+					bind.toFile('private/menuSettimana.html',{
 						tabella: text
 					},function(data){
 						res.writeHead(200, {'Content-Type':'text/html'});
@@ -204,7 +298,10 @@ app.get('/private/choose', function(req,res){
 		if(parseInt(ret[0].num) == 0){
 			db.launchQuery({
 				//estraggo tutti i piatti disponibili il giorno successivo (i pasti si ripetono settimanalmente)
-				text: 'select *, menu.id as toid from menu, pasti where giorno = extract(DOW FROM now() + interval \'1 day\') and menu.id_pasti = pasti.id;'
+				//la funzione DOW FROM now() estrae il numero del giorno della settimana nell'intervallo 1-7
+				//e dato che in nostro DB lavora con giorni della settimana nell'intervallo 0-6, 
+				//non è necessario aggiugere un intervallo di un giorno nella query
+				text: 'select *, menu.id as toid from menu, pasti where giorno = extract(DOW FROM now()) and menu.id_pasti = pasti.id;'
 			}, function(err,result) {
 				if(err){
 					res.redirect('/error');
@@ -402,8 +499,7 @@ app.post('/private/addAllergia', function(req,res){
 		text: 'insert into intollerante (id_utente,id_allergie) values ($1,$2);',
 		values: [req.session.user.id,parseInt(req.body.id_allergie)]
 	}, function(err, result) {
-		if (err) res.redirect('/error');
-		else res.redirect('/private/allergie');
+		res.redirect('/private/allergie');
 	});
 });
 
@@ -437,11 +533,12 @@ app.get('/private/allergie', function(req,res){
 				text1 += tx.closeColonna();
 				text1 += tx.openColonna(4) + tx.openForm('/private/removeAllergia','post');
 				text1 += tx.addInputHidden('text','id_allergie',result[i].id);
-				text1 += tx.formButton("Aggiungi!");
+				text1 += tx.formButton("Rimuovi");
 				text1 += tx.closeForm();
 				text1 += tx.closeColonna();
 				text1 += tx.closeRiga();
 			}
+			text1 += tx.addInterlinea();
 			//aggiungo un select-field per poter scegliere ed aggiungere una nuova allergia all'utente corrente
 			db.launchQuery({
 				text: 'select * from allergie;'
@@ -470,7 +567,7 @@ app.get('/private/allergie', function(req,res){
 //la dichiarazione poteva essere inserita come statica in express ma in implementazioni future potrebbe 
 //trasformarsi in un template per mostrare lo specifico errore anche all'utente
 app.use('/error',function(req,res){
-	res.sendFile('error_page.html');
+	res.sendFile('error_page.html',{ root : __dirname});
 });
 
 //metto in ascolto il sistema sulla porta precedentemente settata ed eseguo la funzione anonima per mostrare come accedere al sistema
