@@ -59,7 +59,6 @@ app.use('/$',function(req,res){
 app.use('/private/*', function(req,res,next){
 	//se l'utente è loggato permetto il proseguimento ...
 	if(req.session.user != undefined) next();
-	
 	//... altrimenti rimando alla pagina di login
 	else res.redirect('/login');
 });
