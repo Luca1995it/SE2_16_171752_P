@@ -39,6 +39,7 @@ app.set('port', (process.env.PORT || 5000));
 //i file in assets e foto potranno essere richiesti senza una espressa funzione middleware che si occupi per ognuno di loro
 app.use(express.static('assets'));
 app.use(express.static('foto'));
+app.use(express.static('public'));
 
 //use sessions
 app.use(session({ 
@@ -51,7 +52,7 @@ app.use(session({
 //filtro che si occupa reindirizzare alla home tutte le richieste "generiche" del tipo /
 app.use('/$',function(req,res){
 	//reindirizzo al middleware che si occupa della home page
-	res.redirect('/private/home');
+	res.redirect('/home');
 });
 
 // filtro per non autenticati, protegge la sezione private da chi non è loggato
@@ -111,8 +112,8 @@ app.post('/accedi', function(req,res){
 });
 
 //ritono la home page modificata con i parametri dell'utente loggato in modo che sia personalizzata
-app.get('/private/home',function(req,res){
-	bind.toFile('private/home.html',
+app.get('/home',function(req,res){
+	bind.toFile('public/home.html',
 		req.session.user,
 		function(data){
 			res.writeHead(200, {'Content-Type':'text/html'});
