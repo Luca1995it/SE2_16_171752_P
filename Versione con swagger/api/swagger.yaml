@@ -1,0 +1,129 @@
+---
+swagger: "2.0"
+info:
+  version: "1.0.1"
+  title: "PASTI TRENTINO"
+paths:
+  /accedi:
+    post:
+      description: "Post user's parameter to log in"
+      operationId: "accediPOST"
+      parameters: []
+      responses:
+        200:
+          description: "Query successfully executed"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/addAllergia:
+    post:
+      description: "Inserisci un'allergia nel db"
+      operationId: "privateAddAllergiaPOST"
+      parameters: []
+      responses:
+        200:
+          description: "the db was uploaded successfully"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/getAllergia:
+    get:
+      description: "Ottieni la lista delle allergie possibili nel db"
+      operationId: "privateGetAllergiaGET"
+      parameters: []
+      responses:
+        200:
+          description: "the db was uploaded succesfully"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/getMyallergia:
+    get:
+      description: "Ottieni la lista delle allergie di questo utente"
+      operationId: "privateGetMyallergiaGET"
+      parameters: []
+      responses:
+        200:
+          description: "the query was successfully executed"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/getPastiDaVotare:
+    get:
+      description: "Ottieni la lista dei piatti che non hai ancora votato"
+      operationId: "privateGetPastiDaVotareGET"
+      parameters: []
+      responses:
+        200:
+          description: "Get the list of piatti objects that were not rated yet"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/getPiatti:
+    get:
+      description: "Ottieni la lista dei menù disponibili per il giorno indicato"
+      operationId: "privateGetPiattiGET"
+      parameters: []
+      responses:
+        200:
+          description: "Get the list of piatti objects for tomorrow"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/getPiattiScelti:
+    get:
+      description: "Ottieni la lista dei menù scelti per oggi"
+      operationId: "privateGetPiattiSceltiGET"
+      parameters: []
+      responses:
+        200:
+          description: "Get the list of piatti objects for tomorrow"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/getPiattiChoose:
+    get:
+      description: "Ottieni la lista dei menù disponibili per l'utente domani"
+      operationId: "privateGetPiattiChooseGET"
+      parameters: []
+      responses:
+        200:
+          description: "Get the list of piatti objects for tomorrow"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/insertScelta:
+    post:
+      description: "Inserisci la tua scelta per il pasto di domani sul db"
+      operationId: "privateInsertSceltaPOST"
+      parameters: []
+      responses:
+        200:
+          description: "Ok if the result where uploaded successfully"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+  /private/removeAllergia:
+    post:
+      description: "Rimuovi un allergia dal db"
+      operationId: "privateRemoveAllergiaPOST"
+      parameters: []
+      responses:
+        200:
+          description: "the db was uploaded successfully"
+        500:
+          description: "There was an internal error"
+      x-swagger-router-controller: "Default"
+definitions:
+  allergia:
+    properties:
+      name:
+        type: "string"
+  piatto:
+    properties:
+      name:
+        type: "string"
+      descr:
+        type: "string"
+      fotopath:
+        type: "string"
