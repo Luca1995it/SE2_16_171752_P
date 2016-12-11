@@ -42,6 +42,14 @@ app.use(session({
 	cookie: { maxAge: 60 * 60 * 1000 }
 }));
 
+//funzione per rimandare ad un file di template con le opzioni desiderate
+function useTemplate(res,path,options){
+	bind.toFile(path,options, function(data){
+		res.writeHead(200, {'Content-Type':'text/html'});
+		res.end(data);
+	});
+}
+
 //filtro che si occupa reindirizzare alla home tutte le richieste "generiche" del tipo /
 app.use('/$',function(req,res){
 	//reindirizzo al middleware che si occupa della home page
@@ -58,15 +66,8 @@ app.use('/private/*', function(req,res,next){
 
 //ritorno pagina di login con il messaggio standard di richiesta delle credenziali
 app.use('/login', function(req,res){
-	
-	bind.toFile('private/login.html',{
-		//messaggio che verrà mostrato sopra il form
-		messaggioErrore: "Inserisci le tue credenziali"
-	}, function(data){
-		//setto l'header della risposta con statusCode 200 (OK) e contenuto di tipo pagina html
-		res.writeHead(200, {'Content-Type':'text/html'});
-		res.end(data);
-	});
+	//messaggioErrore è il messaggio che verrà mostrato sopra il form 
+	useTemplate(res,'private/login.html',{messaggioErrore: "Inserisci le tue credenziali"});
 });
 
 //funzione di autenticazione
@@ -87,15 +88,12 @@ app.post('/accedi', function(req,res){
 		//altrimenti controllo che sia stato trovato un utente con quel username e quella password
 		else if(result.length==1){
 			req.session.user = new obj.utente(result[0].id,result[0].username,result[0].via);
-			res.redirect('/private/home');
+			res.redirect('/home');
 		}
 		//infine, se utente e password erano errati, rimando al login con un messaggio 
 		else {
-			bind.toFile('private/login.html',{
+			useTemplate(res,'private/login.html',{
 				messaggioErrore: "Username o password errati"
-			}, function(data){
-				res.writeHead(200, {'Content-Type': 'text/html'});
-				res.end(data);
 			});
 		}
 	});
@@ -103,12 +101,7 @@ app.post('/accedi', function(req,res){
 
 //ritono la home page modificata con i parametri dell'utente loggato in modo che sia personalizzata
 app.get('/home',function(req,res){
-	bind.toFile('public/home.html',
-		req.session.user,
-		function(data){
-			res.writeHead(200, {'Content-Type':'text/html'});
-			res.end(data);
-	});
+	useTemplate(res,'public/home.html',req.session.user);
 });
 
 //ritorna il menù che è stato scelto per oggi, anche vuoto in caso l'utente non abbia scelto niente il giorno precedente
@@ -129,11 +122,8 @@ app.get('/private/menuOggi', function(req,res){
 				if(err) res.redirect('/error');
 				else{
 					//aggiungo il contenuto a menuOggi.html sotto l'identificatore tabella
-					bind.toFile('private/menuOggi.html',{
-						tabella: tx.menu(result,allergie)
-					},function(data){
-						res.writeHead(200, {'Content-Type':'text/html'});
-						res.end(data);
+					useTemplate(res,'private/menuOggi.html',{ 
+						tabella: tx.menu(result,allergie) 
 					});
 				}
 			});
@@ -155,11 +145,8 @@ app.get('/private/menuSettimanale',function(req,res){
 			}, function(err,allergie){
 				if(err) res.redirect('/error'); else{
 					//aggiungo il contenuto a menuOggi.html sotto l'identificatore tabella
-					bind.toFile('private/menuSettimana.html',{
+					useTemplate(res,'private/menuSettimana.html',{
 						tabella: tx.menuSettimanale(result,allergie)
-					},function(data){
-						res.writeHead(200, {'Content-Type':'text/html'});
-						res.end(data);
 					});
 				}
 			});
@@ -193,11 +180,8 @@ app.get('/private/choose', function(req,res){
 					}, function(err,allergie){
 						if(err) res.redirect('/error');
 						else{
-							bind.toFile('private/scegli.html',{
+							useTemplate(res,'private/scegli.html',{
 								tabella: tx.menuChoose(result,allergie)
-							},function(data){
-								res.writeHead(200, {'Content-Type': 'text/html'});
-								res.end(data);
 							});
 						}
 					});
@@ -207,11 +191,8 @@ app.get('/private/choose', function(req,res){
 		//se era già stato selezionato un pasto per il giorno successivo inserisco un messaggio e la possibilità di rifare la prenotazione
 		//cancellando quella precedente con il middleware /private/cancella
 		else{
-			bind.toFile('private/scegli.html',{
+			useTemplate(res,'private/scegli.html',{
 				tabella: 'Hai già effettuato la prenotazione per domani' + tx.link('/private/cancella',' -> Eliminala e riscegli <- ')
-			},function(data){
-				res.writeHead(200, {'Content-Type':'text/html'});
-				res.end(data);
 			});
 		}
 	});
@@ -230,7 +211,7 @@ app.post('/private/insertScegli',function(req,res){
 	//lancio le query dicendo di partire dalla prima (0) nell'array e di eseguire, una volta terminato, la funzione come secondo paramentro
 	db.launchDeepQuery(query,0,function(err) {
 		if (err) res.redirect('/error');
-		else res.redirect('/private/home');
+		else res.redirect('/home');
 	});
 });
 
@@ -249,17 +230,14 @@ app.get('/private/cancella',function(req,res){
 //nel db il valore 0 indica ancora senza voto, mentre i valori da 1 a 5 indicano che il voto è stato registrato correttamente
 app.get('/private/vota',function(req,res){
 	db.launchQuery({
-		text: 'select * from sceglie,menu,pasti where sceglie.id_utente = $1 and sceglie.voto = 0 and sceglie.id_menu = menu.id and menu.id_pasti = pasti.id order by data;',
+		text: 'select * from sceglie,menu,pasti where sceglie.id_utente = $1 and sceglie.data::date <= now()::date and sceglie.voto = 0 and sceglie.id_menu = menu.id and menu.id_pasti = pasti.id order by data;',
 		values: [req.session.user.id]
 	}, function(err, result) {
 		if (err) res.redirect('/error');
 		else {
-			bind.toFile('private/vota.html',{
+			useTemplate(res,'private/vota.html',{
 				tabella: tx.menuVoto(result)
-			},function(data){
-				res.writeHead(200, {'Content-Type':'text/html'});
-				res.end(data);
-			})
+			});
 		}
 	});
 });
@@ -279,7 +257,7 @@ app.post('/private/addVoto',function(req,res){
 	}
 	//lancio la serie di query con la funzione launchDeep query, 
 	//che al termine di tutto il suo lavoro chiama la funzione passata come secondo argomento
-	db.launchDeepInsert(query,0,function(err) {
+	db.launchDeepQuery(query,0,function(err) {
 		if (err) res.redirect('/error');
 		else res.redirect('/private/vota');
 	});
@@ -324,15 +302,11 @@ app.get('/private/allergie', function(req,res){
 				if (err) res.redirect('/error');
 				else {
 					
-					bind.toFile('private/gestisciAllergie.html',
+					useTemplate(res,'private/gestisciAllergie.html',
 					{
 						tabella: tx.menuAllergie(result),
 						//aggiungo un select-field per poter scegliere ed aggiungere una nuova allergia all'utente corrente
 						selezione: tx.buttonAllergie(allergie)
-					},
-					function(data){
-						res.writeHead(200, {'Content-Type':'text/html'});
-						res.end(data);
 					});
 				}
 			});

@@ -44,7 +44,6 @@ function launchQuery(queryString,callback){
 //Nell'implementazione attuale non permette di eseguire query che si aspettano un risultato di ritorno, ma solo query di tipo update/delete/insert
 function launchDeepQuery(queryString,q,callback){
 	if(q >= queryString.length){
-		console.log("Profondità massima raggiunta, ritorno ok");
 		callback(false);
 	} else{
 		//connect to database
@@ -58,10 +57,8 @@ function launchDeepQuery(queryString,q,callback){
 					done();
 
 					if(err){
-						console.log("Errore, ritorno male");
 						callback(true);
 					} else{
-						console.log("Ricorro con q:" + q);
 						launchDeepQuery(queryString,q+1,callback);
 					}
 				});

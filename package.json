@@ -10,8 +10,10 @@
     "express": "^4.14.0",
     "express-session": "^1.14.2",
     "jasmine": "^2.5.2",
+    "jasmine-node": "^1.14.5",
     "pg": "^6.1.0",
     "psql": "0.0.1",
+    "request": "^2.79.0",
     "swagger": "^0.7.5",
     "util": "^0.10.3"
   },
