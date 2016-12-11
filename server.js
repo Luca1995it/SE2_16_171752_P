@@ -154,29 +154,13 @@ app.get('/private/menuOggi', function(req,res){
 								text += tx.intestazione(orario[o] + " - " + tipo[t]);
 								for(i in result){
 									if(result[i].tipo == tipo[t] && result[i].orario == orario[o]){
-										least = true;
-										//aggiunge una separazione tra righe come <hr>
-										text += tx.addInterlinea();
-										//aggiunge una riga preformattata contenente l'immagine, il nome e la decrizione del piatto
-										text += tx.openRiga();
-										text += tx.openColonna(4);
-										text += tx.addImg(result[i].fotopath);
-										text += tx.closeColonna();
-										text += tx.openColonna(4);
-										text += tx.setDim(result[i].nome,4);
-										text += tx.closeColonna();
-										text += tx.openColonna(4);
-										text += tx.setDim(result[i].descr,5);
-										text += tx.closeColonna();
-										text += tx.closeRiga();
+										text += tx.lineMenu(result[i]);
 										//se un dei piatti a cui l'utente è allergico coincide con quello scelto, aggiungo una riga di avvertimento
 										for(a in allergie){
 											if(allergie[a].id_menu == result[i].id_menu) text += tx.alertMessage('Contiene allergeni',red,5);
 										}
 									}
 								}
-
-
 							}
 						}
 					}

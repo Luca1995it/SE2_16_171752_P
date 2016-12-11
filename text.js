@@ -1,29 +1,4 @@
-exports.intestazione = intestazione;
-exports.openRiga = openRiga;
-exports.closeRiga = closeRiga;
-exports.openColonna = openColonna;
-exports.closeColonna = closeColonna;
-exports.setDim = setDim;
-exports.addImg = addImg;
-exports.addInterlinea = addInterlinea;
-exports.addRigaInterlinea = addRigaInterlinea;
-exports.alertMessage = alertMessage;
-exports.setColor = setColor;
-exports.openForm = openForm;
-exports.closeForm = closeForm;
-exports.addInput = addInput;
-exports.formButton = formButton;
-exports.link = link;
-exports.addInputChecked = addInputChecked;
-exports.addInputHidden = addInputHidden;
-exports.addOption = addOption;
-exports.getStringDay = getStringDay;
-exports.button = button;
-exports.openDiv = openDiv;
-exports.closeDiv = clodeDiv;
-exports.aCapo = aCapo;
-
-function aCapo(){
+exports.aCapo = function aCapo(){
 	return '<br>';
 }
 
@@ -126,4 +101,77 @@ function getStringDay(giorno){
 			case (6): return 'Domenica';
 	}
 	return undefined;
+}
+
+function menu(result){
+	var text = '';
+	//orario e tipo mi permetteranno di ordinare i risultati della ricerca e mostrarli di conseguenza
+	var orario = ['pranzo','cena'];
+	var tipo = ['primo','secondo','contorno'];
+	
+	//per ogni orario (pranzo e cena) estraggo i pasti di ogni tipo (primo,secondo,contorno) e li aggiungo come testo html
+	//se non ho risultati stampo un messaggio
+	if(result.length == 0) text += tx.intestazione('Nessun pasto ordinato per oggi',3);
+	else{
+		for(o in orario){
+			for(t in tipo){
+				text += tx.intestazione(orario[o] + " - " + tipo[t]);
+				for(i in result){
+					if(result[i].tipo == tipo[t] && result[i].orario == orario[o]){
+						text += tx.lineMenu(result[i]);
+						//se un dei piatti a cui l'utente è allergico coincide con quello scelto, aggiungo una riga di avvertimento
+						for(a in allergie){
+							if(allergie[a].id_menu == result[i].id_menu) text += tx.alertMessage('Contiene allergeni',red,5);
+						}
+					}
+				}
+			}
+		}
+	}
+	return text;
+}
+
+function lineMenu(line){
+	var text = '';
+	//aggiunge una separazione tra righe come <hr>
+	text += addInterlinea();
+	//aggiunge una riga preformattata contenente l'immagine, il nome e la decrizione del piatto
+	text += openRiga();
+	text += openColonna(4);
+	text += addImg(line.fotopath);
+	text += closeColonna();
+	text += openColonna(4);
+	text += setDim(line.nome,4);
+	text += closeColonna();
+	text += openColonna(4);
+	text += setDim(line.descr,5);
+	text += closeColonna();
+	text += closeRiga();
+	return text;
+}
+
+function lineMenuCH(line){
+	var text = '';
+	//aggiunge una separazione tra righe come <hr>
+	text += addInterlinea();
+	//aggiunge una riga preformattata contenente l'immagine, il nome, la decrizione del piatto ed un input field di ripo radio per la scelta
+	text += openRiga();
+	text += openColonna(4);
+	text += addImg(line.fotopath);
+	text += closeColonna();
+	text += openColonna(3);
+	text += setDim(line.nome,4);
+	text += closeColonna();
+	text += openColonna(3);
+	text += setDim(line.descr,5);
+	text += closeColonna();
+	text += openColonna(2);
+	text += addInput('radio',line.tipo+line.orario,line.toid,'choose');
+	text += closeColonna();
+	text += closeRiga();
+	return text;
+}
+
+function lineVoto(line){
+	
 }
