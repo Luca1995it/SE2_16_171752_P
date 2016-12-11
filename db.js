@@ -1,8 +1,18 @@
-//connectionString: a causa di un bug di node.js, la variabile di ambiente process.env.DATABASE_URL potrebbe essere undefined, 
-//in quel caso utilizzo il link diretto per il database online di heroku
-var connectionString = process.env.DATABASE_URL || 
-	'postgres://keyivvkxtdtdvz:dtrZkEkbep1o7SjFYF9APp_T4F@ec2-54-235-177-45.compute-1.amazonaws.com:5432/d6dc0imrseapqc?ssl=true';
+//a causa di un funzionamento anomalo della variabile d'ambiente DATABASE_URL, è stato memorizzato il link diretto al database nel file secret-config.json.
+//in un vero progetto sarebbe opportuno aggiungere questo file alla lista dei file che git non sincronizza (in .gitignore).
+var fileName = "./secret-config.json";
+var config;
+try {
+  	config = require(fileName)
+}
+catch (err) {	//nel caso in cui secret-config.json sia inesistente o ci siano errori di sintassi, gestisco l'errore
+  	config = {}
+	console.log("unable to read file '" + fileName + "': ", err);
+  	console.log("see secret-config-sample.json for an example");
+}
 
+//imposto connectionString come il link diretto al db
+var connectionString = config.DATABASE_URL;
 var pg = require('pg');
 
 //funzione per eseguire una singola query
