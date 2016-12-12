@@ -80,7 +80,7 @@ app.post('/accedi', function(req,res){
 			values: [req.body.username,req.body.password] 
 	};
 	
-	//lancio la funzione launchQuery definita in db.js, permette di eseguire una query ed infine chiama la funzione come secondo parametro
+	//lancio la funzione launchQuery definita in db.js che permette di eseguire una query ed infine chiama la funzione come secondo parametro
 	//result è l'array che contiene le righe risultate dalla query
 	db.launchQuery(query, function(err,result){
 		//se c'è stato un errore, rimando a error
@@ -93,24 +93,25 @@ app.post('/accedi', function(req,res){
 		//infine, se utente e password erano errati, rimando al login con un messaggio 
 		else {
 			useTemplate(res,'private/login.html',{
+				//tx.menu ritorna il codice html della tabella generata per mostrare i dati di result
 				messaggioErrore: "Username o password errati"
 			});
 		}
 	});
 });
 
-//ritono la home page modificata con i parametri dell'utente loggato in modo che sia personalizzata
+//ritono la home page modificata con i parametri dell'utente loggato in modo che sia personalizzabile
 app.get('/home',function(req,res){
 	useTemplate(res,'public/home.html',req.session.user);
 });
 
-//ritorna il menù che è stato scelto per oggi, anche vuoto in caso l'utente non abbia scelto niente il giorno precedente
+//ritorna il menù che è stato scelto per oggi, anche vuoto in caso l'utente non abbia scelto pasti il giorno precedente
 app.get('/private/menuOggi', function(req,res){
 
 	//lancio la query per estrarre i piatti scelti per oggi
 	db.launchQuery({
 		text: 'select * from (select * from (select * from utenti natural join sceglie where utenti.id = $1 and sceglie.data = now()) as res, menu where res.id_menu = menu.id and giorno = $2) as x, pasti where x.id_pasti = pasti.id;',
-		values: [req.session.user.id,(new Date()).getDay()]
+		values: [req.session.user.id,(new Date()).getDay()]			//new Date().getDay() ritorna il numero del giorno della settimana tra 0 e 6
 	}, function(err,result) {
 		if(err) res.redirect('/error');
 		else {
@@ -121,8 +122,9 @@ app.get('/private/menuOggi', function(req,res){
 			}, function(err,allergie){
 				if(err) res.redirect('/error');
 				else{
-					//aggiungo il contenuto a menuOggi.html sotto l'identificatore tabella
+					//aggiungo il risultato della funzione tx.menu a menuOggi.html sotto l'identificatore tabella
 					useTemplate(res,'private/menuOggi.html',{ 
+						//tx.menu ritorna il codice html della tabella generata per mostrare i dati di result
 						tabella: tx.menu(result,allergie) 
 					});
 				}
@@ -131,6 +133,7 @@ app.get('/private/menuOggi', function(req,res){
 	});		
 });
 
+//mostra nella pagina la lista di tutti i piatti disponibili durante la settimana, con alcuni pulsanti per visualizzare giorni specifici
 app.get('/private/menuSettimanale',function(req,res){
 	//lancio la query per estrarre i piatti scelti per il giorno in questione
 	db.launchQuery({
@@ -144,8 +147,10 @@ app.get('/private/menuSettimanale',function(req,res){
 				values: [req.session.user.id]
 			}, function(err,allergie){
 				if(err) res.redirect('/error'); else{
-					//aggiungo il contenuto a menuOggi.html sotto l'identificatore tabella
+					//aggiungo il risultato della funzione tx.menSettimanale a menuOggi.html sotto l'identificatore tabella
 					useTemplate(res,'private/menuSettimana.html',{
+						//tx.menuSettimanale ritorna il codice html della tabella generata per mostrare i dati di result
+						//ed alcuni pulsanti per la gestione dei giorni
 						tabella: tx.menuSettimanale(result,allergie)
 					});
 				}
@@ -199,7 +204,7 @@ app.get('/private/choose', function(req,res){
 });
 
 //inserisce nel database le scelte fatte dall'utente nella scelta del menu per il giorno successivo
-app.post('/private/insertScegli',function(req,res){
+app.post('/private/choose',function(req,res){
 	//creo un array di query che dovranno essere eseguite dalla funzione launchDeepQuey
 	var query = [];
 	for(c in req.body){
@@ -210,8 +215,8 @@ app.post('/private/insertScegli',function(req,res){
 	}
 	//lancio le query dicendo di partire dalla prima (0) nell'array e di eseguire, una volta terminato, la funzione come secondo paramentro
 	db.launchDeepQuery(query,0,function(err) {
-		if (err) res.redirect('/error');
-		else res.redirect('/home');
+		if (err) res.redirect('/error');		//in caso di errore rimando a /error
+		else res.redirect('/home');				//in caso di successo rimando alla home
 	});
 });
 
@@ -236,14 +241,14 @@ app.get('/private/vota',function(req,res){
 		if (err) res.redirect('/error');
 		else {
 			useTemplate(res,'private/vota.html',{
-				tabella: tx.menuVoto(result)
+				tabella: tx.menuVoto(result)	//menuVoto ritorna una tabella HTML con campi di input per scegliere un voto da 1 a 5
 			});
 		}
 	});
 });
 
 //middleware che si occupa della registrazione dei voti sul database
-//i voti vengono controllati perchè quelli con valore 0 non hanno senso ad riscritti uguali nel db
+//i voti vengono controllati perchè quelli con valore 0 non hanno senso ad essere riscritti uguali nel db
 app.post('/private/addVoto',function(req,res){
 	//creo array di query da eseguire per aggiornare i voti sul db
 	var query = [];
@@ -255,7 +260,7 @@ app.post('/private/addVoto',function(req,res){
 			});
 		}
 	}
-	//lancio la serie di query con la funzione launchDeep query, 
+	//lancio la serie di query con la funzione launchDeepQuery, 
 	//che al termine di tutto il suo lavoro chiama la funzione passata come secondo argomento
 	db.launchDeepQuery(query,0,function(err) {
 		if (err) res.redirect('/error');
@@ -285,9 +290,6 @@ app.post('/private/removeAllergia', function(req,res){
 });
 
 app.get('/private/allergie', function(req,res){
-	//due variabili di tipo stringa per memorizzare le due parti di testo html che genero dinamicamente e che vanno aggiunte a gestisciAllergie.html
-	var text1 = '';
-	var text2 = '';
 			
 	db.launchQuery({
 		//seleziono tutte le allergie dell'utente corrente
@@ -301,11 +303,11 @@ app.get('/private/allergie', function(req,res){
 			}, function(err, allergie) {
 				if (err) res.redirect('/error');
 				else {
-					
 					useTemplate(res,'private/gestisciAllergie.html',
 					{
-						tabella: tx.menuAllergie(result),
+						tabella: tx.menuAllergie(result),	//ritorna una semplice tabella HTML per mostrare le allergie
 						//aggiungo un select-field per poter scegliere ed aggiungere una nuova allergia all'utente corrente
+						//ed un pulsante per confermare la scelta
 						selezione: tx.buttonAllergie(allergie)
 					});
 				}
@@ -321,7 +323,7 @@ app.use('/error',function(req,res){
 	res.sendFile('error_page.html',{ root : __dirname});
 });
 
-//metto in ascolto il sistema sulla porta precedentemente settata ed eseguo la funzione anonima per mostrare come accedere al sistema
+//metto in ascolto il sistema sulla porta precedentemente settata ed eseguo la funzione anonima per mostrare come accedere al sistema tramite browser
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });

@@ -1,0 +1,219 @@
+# Example YAML to get you started quickly.
+# Be aware that YAML has indentation based scoping.
+# Code completion support is available so start typing for available options.
+swagger: '2.0'
+
+# This is your document metadata
+info:
+  version: "1.0.1"
+  title: PASTI TRENTINO
+
+paths:
+  /:
+    get:
+      description: Per ottenere la home page 
+      responses:
+        200:
+          description: Home page correttamente creata e ritornata all'utente
+          schema:
+            title: Home Page
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+          
+  /login:
+    get:
+      description: Ottenere la pagina di login
+      responses:
+        200:
+          description: Login page creata correttamente e ritornata all'utente
+          schema:
+            title: Login Page
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+
+  /accedi:
+    post:
+      description: Entra nel sistema inserendo username e password
+      parameters:
+        - name: username
+          in: query
+          description: Il tuo username personale
+          required: true
+          type: string
+        - name: password
+          in: query
+          description: La tua password personale
+          required: true
+          type: string
+      responses:
+        200:
+          description: La home page dell'utente registrato
+          schema:
+            title: Home Page
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+                  
+  /home:
+    get:
+      description: Per ottenere la home page dell'utente
+      responses:
+        200:
+          description: La home page è stata creata correttamente e ritornata all'utente
+          schema:
+            title: Home Page
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+            
+  /private/menuOggi:
+    get:
+      description: La pagina contenente i piatti scelti dall'utente che verranno consegnati oggi
+      responses:
+        200:
+          description: Ottieni la pagina desiderata
+          schema:
+            title: pagina menu di oggi
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+                  
+  /private/menuSettimanale:
+   get:
+      description: La pagina contenente tutti i piatti di tutta la settimana
+      responses:
+        200:
+          description: Ottieni la pagina desiderata
+          schema:
+            title: pagina menu dei menu di tutta la settimana
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+            
+  /private/choose:
+    get:
+      description: Visualizza il menu di domani e scegli i piatti che deisderi
+      responses:
+        200:
+          description: La pagina è stata creata correttamente
+          schema:
+            title: pagina di scelta dei piatti
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+    
+    post:
+      description: Registra nel sistema la scelta dei menu che desideri domani
+      parameters:
+        - name: menu_id
+          in: query
+          description: l'array degli id dei menu scelti
+          required: true
+          type: array
+          items:
+            type: integer
+      responses:
+        200:
+          description: La tua scelta è stata registrata correttamente
+          schema:
+            title: Home page
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+            
+  /private/cancella:
+    post:
+      description: Rimuovi pasti scelti per domani dal db
+      responses: 
+        200:
+          description: I pasti sono stati rimossi correttamente
+          schema:
+            title: Home page
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+            
+  /private/vota:
+    get:
+      description: Ottieni la pagina con la lista di tutti i piatti che l'utente ha consumato ma non ancora votato
+      responses:
+        200:
+          description: La pagina è stata creata correttamente ed inviata all'utenet
+          schema:
+            title: pagina di voto
+            type: string
+        500:
+          description: C'è stato un errore interno nel registrare la richiesta
+            
+  /private/addVoto:
+    post:
+      description: Registra i voti assegnati ai vari piatti nel database di sistema
+      parameters:
+        - name: voti
+          in: query
+          description: l'array degli id dei menu scelti ed i voti assegnati
+          required: true
+          type: array
+          items:
+            type: integer
+
+      responses:
+        200:
+          description: I voti sono stati registrati correttamente, rimando alla pagina di votazione
+          schema:
+            title: Vota piatti
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+        
+  /private/addAllergia:
+    post:
+      description: Aggiungi un allergia
+      parameters:
+        - name: id_allergia
+          in: query
+          description: l'id dell'allergia da aggiungere
+          required: true
+          type: integer
+          
+      responses: 
+        200:
+          description: Allergia registrata correttamente
+          schema:
+            title: Pagina di gestione delle allergie
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+          
+  /private/removeAllergia:
+    post:
+      description: Rimuovi un allergia
+      parameters:
+        - name: id_allergia
+          in: query
+          description: l'id dell'allergia da rimuovere
+          required: true
+          type: integer
+          
+      responses: 
+        200:
+          description: Allergia eliminata correttamente
+          schema:
+            title: Pagina di gestione delle allergie
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
+          
+  /private/allergie:
+    post:
+      description: Gestisci le allergie di questo utente
+      responses: 
+        200:
+          description: Pagina delle allergie
+          schema:
+            title: Pagina di gestione delle allergie
+            type: string
+        500:
+          description: C'è stato un errore interno al server nel creare la tua pagina
