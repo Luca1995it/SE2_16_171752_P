@@ -1,0 +1,80 @@
+Code review su SE2_16_171752_P
+
+author:
+- Spagnolo Francesco 172195
+
+# User Experience
+
+L'applicazione non ha dimostrato problemi di funzionamento.
+L'interfaccia utente non è particolarmente user-friendly, potrebbe essere strutturata in maniera più semplice soprattutto visto il target dell'applicazione.
+
+# Code review
+
+Per la review è stato considerato il file server.js.
+
+- Il codice include molti commenti, a volte risultano essere fastidiosi per la lettura del codice.
+- L'organizzazione tramite pattern MVC non è rispettata.
+- Il nome delle funzioni è generalmente adatto alla propria funzione.
+
+##	General
+- [ ] MVC pattern used
+- [x]	Images have been optimized
+
+##	Markup
+- [x]	Code does not contain inline style attributes
+- [x]	Code does not contain deprecated elements & attributes
+- [x]	Code is indented using hard tabs 
+- [x]	Tags and attributes are lowercase
+- [x]	Tags are closed and nested properly
+- [x]	Tables are only used to display tabular data
+- [x]	Element IDs are unique
+- [x]	Code validates against the W3C validator
+- [x]	All user input is “sanitized” 
+
+##	Accessibility
+- [x]	Page has a proper outline (H1-H6 order)
+- [ ]	Alt attributes exist on all <img> elements
+
+##	CSS
+- [x]	Style blocks are externalized to .css files
+- [x]	Consistent naming conventions are used
+- [x]	CSS validates against the W3C validator
+- [x]	A print-friendly .css file is included in the page
+
+##	Mobile
+- [x]	Functions with JavaScript turned off
+- [ ]	Image file sizes do not exceed 70kb
+- [ ]	Appropriate use of HTML inputs (e.g. email, phone, etc) to trigger corresponding on-screen keyboards
+
+##	JavaScript
+- [ ]	Script blocks are externalized to .js files
+- [ ]	Consistent naming conventions are used 
+- [ ]	Core page features function with JavaScript disabled
+- [x]	Script blocks are placed before the closing <body> tag
+- [ ]	Code has been run through JSHint (jshint.com)
+
+## Code Base Checks
+- [x]  All code is checked into SVN or other source code repository
+- [x]	Client-side code is free of any references to development and staging environments, URLs, or other development settings
+- [ ]	Does the code completely and correctly implement the design?
+- [x]	Is the code well-structured, consistent in style, and consistently formatted?
+- [ ]	Are there any uncalled or unneeded procedures or any unreachable code?
+- [ ]	Are there any leftover stubs or test routines in the code? 
+- [x]	Can any code be replaced by calls to external reusable components or library functions? 
+- [x]	Are there any blocks of repeated code that could be condensed into a single procedure? 
+- [x]	Are any modules excessively complex and should be restructured or split into multiple routines?
+- [ ]	Are there any redundant or unused variables?
+
+##	Loops and branches
+- [x]	Are all loops, branches, and logic constructs complete, correct, and properly nested?
+- [x]	Are the most common cases tested first in IF- -ELSEIF chains?
+- [x]	Are all cases covered in an IF- -ELSEIF or CASE block, including ELSE or DEFAULT clauses?
+- [x]	Does every case statement have a default?
+- [x]	Are loop termination conditions obvious and invariably achievable?
+- [ ]	Are indexes or subscripts properly initialized, just prior to the loop?
+- [ ]	Can any statements that are enclosed within loops be placed outside the loops?
+- [x]	Does the code in the loop avoid manipulating the index variable or using it upon exit from the loop?
+
+## Documentation
+- [x]	Is the code clearly and adequately documented with an easy-to-maintain commenting style?
+- [x]	Are all comments consistent with the code?
