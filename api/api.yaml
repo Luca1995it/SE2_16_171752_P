@@ -207,7 +207,7 @@ paths:
           description: C'è stato un errore interno al server nel creare la tua pagina
           
   /private/allergie:
-    post:
+    get:
       description: Gestisci le allergie di questo utente
       responses: 
         200:

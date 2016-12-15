@@ -1,3 +1,7 @@
+//Questo file contiene semplici funzioni per la generazione di codice HTML.
+//Nella seconda parte ci sono funzioni più complesse (basate su quelle semplici iniziali)
+//in grado di generare piccole tabelle bootstrap per la visualizzazione dei menu e dei form
+
 function aCapo(){
 	return '<br>';
 }
