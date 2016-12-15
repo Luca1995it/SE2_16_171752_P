@@ -16,3 +16,5 @@ Il progetto è così strutturato:
 - db.js: contiene tutte le primitive necessarie ad effettuare operazioni sul database
 - create.sql: contiene le istruzioni originali per generare le tabelle sul database
 - cartella api: contiene le api (in formato yaml) del progetto
+
+Heroku Site: https://ancient-meadow-55054.herokuapp.com/
