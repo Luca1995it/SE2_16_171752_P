@@ -72,11 +72,8 @@ app.get('/login', function(req,res){
 
 //funzione di autenticazione
 app.post('/accedi', function(req,res){
-	console.log("Entrooo");
-	console.log(req.body.username + ' ' + req.body.password);
 	if(req.body != undefined){
 		if(req.body.username != undefined && req.body.username != '' && req.body.password != undefined && req.body.password != ''){
-			console.log('Request: ' + req.body.username + ',' + req.body.password);
 			//dichiaro la query che dovrà essere eseguita con gli specificatori di formato $1 e $2,
 			//che saranno automaticamente rimpiazzati dai valori che l'utente ha inserito nel form
 			var query = { text: 'select * from utenti where username = $1 and password = $2',
@@ -287,7 +284,6 @@ app.post('/private/addVoto',function(req,res){
 
 //middleware chiamato per aggiungere un'allergia dell'utente corrente sul database
 app.post('/private/addAllergia', function(req,res){
-	console.log('Adding');
 	if(req.body != undefined){
 		if((req.body.id_allergie != undefined) && (typeof req.body.id_allergie === 'string')){
 			db.launchQuery({

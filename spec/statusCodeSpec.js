@@ -5,7 +5,7 @@ var bind = require('bind');
 function testStatusCodeRequest(method,statusCodeExpected,params,URL){
 	if(!Array.isArray(statusCodeExpected)) statusCodeExpected = [statusCodeExpected];
 	method = method.toLowerCase();
-	it("returns status code 200", function(done) {
+	it("returns status code in statusCodeExpected", function(done) {
 		switch (method){
 			case 'get':
 				request.get(base_url+URL, function(error, response, body) {
